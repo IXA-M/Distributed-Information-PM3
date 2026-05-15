@@ -1,0 +1,47 @@
+{{- if .Values.services.chunkLocation.database.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.services.chunkLocation.database.name }}
+  namespace: {{ include "cse474.namespace" . }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.services.chunkLocation.database.name }}
+    {{- include "cse474.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.services.chunkLocation.database.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.services.chunkLocation.database.name }}
+        app.kubernetes.io/name: {{ .Values.services.chunkLocation.database.name }}
+    spec:
+      containers:
+        - name: mongo
+          image: {{ .Values.services.chunkLocation.database.image }}
+          ports:
+            - containerPort: {{ .Values.services.chunkLocation.database.port }}
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: {{ .Values.services.chunkLocation.database.initDatabase | quote }}
+          resources:
+            {{- toYaml .Values.services.chunkLocation.database.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.services.chunkLocation.database.name }}
+  namespace: {{ include "cse474.namespace" . }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.services.chunkLocation.database.name }}
+    {{- include "cse474.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: {{ .Values.services.chunkLocation.database.name }}
+  ports:
+    - name: mongo
+      port: {{ .Values.services.chunkLocation.database.port }}
+      targetPort: {{ .Values.services.chunkLocation.database.port }}
+{{- end }}
