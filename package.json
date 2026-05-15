@@ -1,0 +1,11 @@
+{
+  "name": "pm2-service",
+  "private": true,
+  "workspaces": [
+    "services/*"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces",
+    "start:pm2": "npx pm2-runtime ecosystem.config.js"
+  }
+}

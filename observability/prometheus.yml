@@ -1,0 +1,6 @@
+# Team TODO:
+# Add scrape targets for every service before submission.
+global:
+  scrape_interval: 15s
+
+scrape_configs: []
