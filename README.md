@@ -161,9 +161,14 @@ The pipeline runs on pull requests and pushes to `main`. It performs linting, de
 Required GitHub Actions secrets:
 
 ```text
-DOCKERHUB_USERNAME
 DOCKERHUB_TOKEN
 KUBE_CONFIG
+```
+
+Optional GitHub Actions secrets:
+
+```text
+DOCKERHUB_USERNAME
 ```
 
 Image registries:
