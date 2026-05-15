@@ -17,6 +17,8 @@ jobs:
       image_namespace: ${{ steps.vars.outputs.image_namespace }}
       chunk_catalog_image: ${{ steps.vars.outputs.chunk_catalog_image }}
       chunk_location_image: ${{ steps.vars.outputs.chunk_location_image }}
+      audit_log_image: ${{ steps.vars.outputs.audit_log_image }}
+      central_logging_image: ${{ steps.vars.outputs.central_logging_image }}
     steps:
       - name: Compute image names
         id: vars
@@ -26,6 +28,8 @@ jobs:
           echo "image_namespace=${image_namespace}" >> "$GITHUB_OUTPUT"
           echo "chunk_catalog_image=ghcr.io/${image_namespace}/chunk-catalog" >> "$GITHUB_OUTPUT"
           echo "chunk_location_image=ghcr.io/${image_namespace}/chunk-location" >> "$GITHUB_OUTPUT"
+          echo "audit_log_image=ghcr.io/${image_namespace}/audit-log" >> "$GITHUB_OUTPUT"
+          echo "central_logging_image=ghcr.io/${image_namespace}/central-logging" >> "$GITHUB_OUTPUT"
 
   lint:
     name: Lint
@@ -121,6 +125,20 @@ jobs:
           push: false
           tags: ${{ needs.prepare.outputs.chunk_location_image }}:${{ github.sha }}
 
+      - name: Build audit-log image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/audit-log
+          push: false
+          tags: ${{ needs.prepare.outputs.audit_log_image }}:${{ github.sha }}
+
+      - name: Build central-logging image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/central-logging
+          push: false
+          tags: ${{ needs.prepare.outputs.central_logging_image }}:${{ github.sha }}
+
   push:
     name: Push
     runs-on: ubuntu-latest
@@ -189,6 +207,10 @@ jobs:
             --set services.chunkCatalog.image.tag=${{ github.sha }} \
             --set services.chunkLocation.image.repository=${{ needs.prepare.outputs.chunk_location_image }} \
             --set services.chunkLocation.image.tag=${{ github.sha }} \
+            --set services.auditLog.image.repository=${{ needs.prepare.outputs.audit_log_image }} \
+            --set services.auditLog.image.tag=${{ github.sha }} \
+            --set services.centralLogging.image.repository=${{ needs.prepare.outputs.central_logging_image }} \
+            --set services.centralLogging.image.tag=${{ github.sha }} \
             > rendered-manifests.yaml
 
       - name: Upload rendered manifests
