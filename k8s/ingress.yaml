@@ -7,26 +7,6 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-  - host: audit-log.cse474.local
-    http:
-      paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: audit-log-service
-              port:
-                number: 3025
-  - host: central-logging.cse474.local
-    http:
-      paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: central-logging-service
-              port:
-                number: 3026
     - host: chunk-catalog.local
       http:
         paths:
