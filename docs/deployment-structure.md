@@ -16,6 +16,7 @@ This repository will use **one shared root-level Kubernetes layout** plus **one 
   - `secret.yaml`
   - `deployment.yaml`
   - `service.yaml`
+  - `hpa.yaml`
 - If a service needs its own database, that service also gets:
   - `mongodb.yaml` or another clearly named database manifest in its own `k8s/<service-name>/` folder
 

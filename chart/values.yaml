@@ -48,6 +48,12 @@ services:
         periodSeconds: 15
     ingress:
       host: chunk-catalog.local
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
     database:
       enabled: true
       name: chunk-catalog-db
@@ -103,6 +109,12 @@ services:
         periodSeconds: 15
     ingress:
       host: chunk-location.local
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
     database:
       enabled: true
       name: chunk-location-db

@@ -20,3 +20,4 @@ Values currently support overriding:
 - resource limits and requests
 - ingress hosts
 - per-service MongoDB deployment settings
+- HPA min/max replicas and CPU/memory targets

@@ -13,6 +13,7 @@ k8s/
     secret.yaml
     deployment.yaml
     service.yaml
+    hpa.yaml
     mongodb.yaml   # only if the service owns a database
 ```
 
