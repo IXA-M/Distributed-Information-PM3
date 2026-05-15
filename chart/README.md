@@ -19,3 +19,4 @@ Values currently support overriding:
 - replica counts
 - resource limits and requests
 - ingress hosts
+- per-service MongoDB deployment settings

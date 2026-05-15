@@ -14,6 +14,9 @@ services:
       repository: chunk-catalog
       tag: latest
       pullPolicy: IfNotPresent
+    command:
+      - node
+      - src/server.js
     replicaCount: 2
     containerPort: 3001
     service:
@@ -31,16 +34,33 @@ services:
         cpu: 250m
         memory: 256Mi
     probes:
+      startup:
+        path: /health
+        periodSeconds: 5
+        failureThreshold: 24
       readiness:
         path: /ready
         initialDelaySeconds: 5
         periodSeconds: 10
       liveness:
         path: /health
-        initialDelaySeconds: 10
+        initialDelaySeconds: 30
         periodSeconds: 15
     ingress:
       host: chunk-catalog.local
+    database:
+      enabled: true
+      name: chunk-catalog-db
+      image: mongo:7
+      port: 27017
+      initDatabase: chunk_catalog
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
 
   chunkLocation:
     name: chunk-location
@@ -48,6 +68,9 @@ services:
       repository: chunk-location
       tag: latest
       pullPolicy: IfNotPresent
+    command:
+      - node
+      - src/server.js
     replicaCount: 2
     containerPort: 3002
     service:
@@ -66,13 +89,30 @@ services:
         cpu: 250m
         memory: 256Mi
     probes:
+      startup:
+        path: /health
+        periodSeconds: 5
+        failureThreshold: 24
       readiness:
         path: /ready
         initialDelaySeconds: 5
         periodSeconds: 10
       liveness:
         path: /health
-        initialDelaySeconds: 10
+        initialDelaySeconds: 30
         periodSeconds: 15
     ingress:
       host: chunk-location.local
+    database:
+      enabled: true
+      name: chunk-location-db
+      image: mongo:7
+      port: 27017
+      initDatabase: chunk_location
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi

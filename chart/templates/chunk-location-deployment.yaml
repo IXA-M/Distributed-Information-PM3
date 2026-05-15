@@ -21,6 +21,8 @@ spec:
         - name: {{ .Values.services.chunkLocation.name }}
           image: "{{ .Values.services.chunkLocation.image.repository }}:{{ .Values.services.chunkLocation.image.tag }}"
           imagePullPolicy: {{ .Values.services.chunkLocation.image.pullPolicy }}
+          command:
+            {{- toYaml .Values.services.chunkLocation.command | nindent 12 }}
           ports:
             - containerPort: {{ .Values.services.chunkLocation.containerPort }}
           envFrom:
@@ -30,6 +32,12 @@ spec:
                 name: {{ .Values.services.chunkLocation.name }}-secret
           resources:
             {{- toYaml .Values.services.chunkLocation.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.services.chunkLocation.probes.startup.path }}
+              port: {{ .Values.services.chunkLocation.containerPort }}
+            periodSeconds: {{ .Values.services.chunkLocation.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.services.chunkLocation.probes.startup.failureThreshold }}
           readinessProbe:
             httpGet:
               path: {{ .Values.services.chunkLocation.probes.readiness.path }}
