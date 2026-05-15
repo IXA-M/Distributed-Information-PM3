@@ -1,0 +1,36 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-services
+  namespace: {{ include "cse474.namespace" . }}
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.services.chunkCatalog.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.chunkCatalog.name }}
+                port:
+                  number: {{ .Values.services.chunkCatalog.service.port }}
+    - host: {{ .Values.services.chunkLocation.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.chunkLocation.name }}
+                port:
+                  number: {{ .Values.services.chunkLocation.service.port }}
+{{- end }}

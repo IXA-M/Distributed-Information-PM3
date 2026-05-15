@@ -1,0 +1,78 @@
+namespace:
+  create: true
+  name: cse474-prod
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+
+services:
+  chunkCatalog:
+    name: chunk-catalog
+    image:
+      repository: chunk-catalog
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 3001
+    service:
+      type: ClusterIP
+      port: 3001
+    config:
+      PORT: "3001"
+    secret:
+      DATABASE_URL: mongodb://chunk-catalog-db:27017/chunk_catalog
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      readiness:
+        path: /ready
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 10
+        periodSeconds: 15
+    ingress:
+      host: chunk-catalog.local
+
+  chunkLocation:
+    name: chunk-location
+    image:
+      repository: chunk-location
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 3002
+    service:
+      type: ClusterIP
+      port: 3002
+    config:
+      PORT: "3002"
+      NODE_REGISTRY_BASE_URL: http://node-registry:3017
+    secret:
+      DATABASE_URL: mongodb://chunk-location-db:27017/chunk_location
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      readiness:
+        path: /ready
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 10
+        periodSeconds: 15
+    ingress:
+      host: chunk-location.local

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cse474
+description: Helm chart for the PM3 microservices owned in this branch
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

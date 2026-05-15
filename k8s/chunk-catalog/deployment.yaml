@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chunk-catalog
+  namespace: cse474-prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chunk-catalog
+  template:
+    metadata:
+      labels:
+        app: chunk-catalog
+    spec:
+      containers:
+        - name: chunk-catalog
+          image: chunk-catalog:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: chunk-catalog-config
+            - secretRef:
+                name: chunk-catalog-secret
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 2
+            failureThreshold: 3
