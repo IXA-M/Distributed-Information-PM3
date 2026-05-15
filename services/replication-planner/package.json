@@ -1,0 +1,13 @@
+{
+  "name": "@distributed-information/replication-planner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Replication Planner microservice.",
+  "main": "src/worker.js",
+  "scripts": {
+    "coverage": "jest --coverage --runInBand --coverageDirectory=tests/coverage",
+    "lint": "node ../../scripts/check-service-syntax.js",
+    "start": "node src/worker.js",
+    "test": "jest --runInBand"
+  }
+}

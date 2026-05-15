@@ -1,23 +1,73 @@
 # Observability
 
-Keep shared observability assets in this folder.
+This folder contains monitoring and tracing assets for the full PM3 system.
 
-Expected contents for the assignment:
+## Contents
 
-- `prometheus.yml`
-- `grafana/` dashboard exports
-- tracing screenshots or links in the report or root README
+```text
+observability/prometheus.yml
+observability/grafana/chunk-services-dashboard.json
+observability/grafana/distributed-information-dashboard.json
+observability/loki-config.yml
+observability/promtail-config.yml
+```
 
-Current implementation in this branch:
+The combined Helm chart also provisions Prometheus, Grafana, Loki, and Jaeger from `chart/templates/monitoring.yaml`.
 
-- structured JSON logs from both owned services
-- Prometheus `/metrics` endpoints on both owned services
-- Prometheus scrape config for both owned services
-- Loki and Promtail config for centralized log aggregation
-- Grafana dashboard JSON with request rate, error rate, and p50/p95/p99 latency panels
-- trace propagation through `traceparent` headers and structured trace identifiers in logs
+## Metrics
 
-Note:
+All services expose Prometheus metrics at:
 
-- the full tracing rubric asks for at least 5 instrumented services, which depends on the full team integration
-- this branch instruments the two owned services with trace identifiers and prepares the shared observability assets the team can extend
+```text
+GET /metrics
+```
+
+Prometheus scrape jobs:
+
+```text
+chunk-catalog
+chunk-location
+storage-gateway
+replication-planner
+```
+
+Open Prometheus locally:
+
+```powershell
+kubectl port-forward -n cse474-prod svc/prometheus 9090:9090
+```
+
+## Grafana
+
+Open Grafana locally:
+
+```powershell
+kubectl port-forward -n cse474-prod svc/grafana 3000:3000
+```
+
+Default credentials:
+
+```text
+admin / admin
+```
+
+## Jaeger Tracing
+
+Storage Gateway and Replication Planner use OpenTelemetry auto-instrumentation and export traces to Jaeger through:
+
+```text
+OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+```
+
+Open Jaeger locally:
+
+```powershell
+kubectl port-forward -n cse474-prod svc/jaeger 16686:16686
+```
+
+Expected Jaeger service names:
+
+```text
+storage-gateway
+replication-planner
+```
