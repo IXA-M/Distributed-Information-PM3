@@ -47,3 +47,8 @@ app.get('/metrics', async (req, res) => {
   res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
 });
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
+
+// Serve Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

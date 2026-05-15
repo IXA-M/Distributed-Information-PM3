@@ -54,3 +54,8 @@ app.get('/metrics', async (req, res) => {
   res.end(await register.metrics());
 });
 const { log } = require('./logger');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
+
+// Serve Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
