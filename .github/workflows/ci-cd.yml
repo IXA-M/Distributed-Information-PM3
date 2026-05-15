@@ -164,52 +164,35 @@ jobs:
             ${{ needs.prepare.outputs.chunk_location_image }}:latest
 
   deploy:
-    name: Deploy
+    name: Mock Deploy
     runs-on: ubuntu-latest
     needs:
       - prepare
       - push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    env:
-      KUBECONFIG: ./kubeconfig
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: v1.34.1
 
       - name: Setup Helm
         uses: azure/setup-helm@v4
         with:
           version: v3.16.1
 
-      - name: Configure kubeconfig
-        shell: bash
-        run: |
-          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > "$KUBECONFIG"
-          chmod 600 "$KUBECONFIG"
-          if ! kubectl config current-context >/dev/null 2>&1; then
-            first_context="$(kubectl config get-contexts -o name | head -n 1)"
-            if [ -z "$first_context" ]; then
-              echo "KUBE_CONFIG_DATA does not contain any Kubernetes contexts."
-              exit 1
-            fi
-            kubectl config use-context "$first_context"
-          fi
+      - name: Lint chart
+        run: helm lint ./chart
 
-      - name: Verify cluster access
-        shell: bash
+      - name: Render Helm release
         run: |
-          kubectl config current-context
-          kubectl cluster-info
-
-      - name: Deploy with Helm
-        run: |
-          helm upgrade --install cse474 ./chart \
+          helm template cse474 ./chart \
             --set services.chunkCatalog.image.repository=${{ needs.prepare.outputs.chunk_catalog_image }} \
             --set services.chunkCatalog.image.tag=${{ github.sha }} \
             --set services.chunkLocation.image.repository=${{ needs.prepare.outputs.chunk_location_image }} \
-            --set services.chunkLocation.image.tag=${{ github.sha }}
+            --set services.chunkLocation.image.tag=${{ github.sha }} \
+            > rendered-manifests.yaml
+
+      - name: Upload rendered manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-manifests
+          path: rendered-manifests.yaml
