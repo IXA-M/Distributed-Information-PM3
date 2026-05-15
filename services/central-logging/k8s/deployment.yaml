@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: central-logging
+  namespace: default
+  labels:
+    app: central-logging
+spec:
+  replicas: 2                         # Required by project spec
+  selector:
+    matchLabels:
+      app: central-logging
+  strategy:
+    type: RollingUpdate               # Zero-downtime updates
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: central-logging
+    spec:
+      containers:
+        - name: central-logging
+          image: central-logging:latest   # Replace with your registry image
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3026
+
+          # ── Environment from ConfigMap ──────────────────────
+          envFrom:
+            - configMapRef:
+                name: central-logging-config
+
+          # ── Environment from Secret ─────────────────────────
+          env:
+            - name: KAFKA_BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: central-logging-secret
+                  key: KAFKA_BROKER
+
+          # ── Health Check (Liveness) ─────────────────────────
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3026
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+
+          # ── Readiness Check ─────────────────────────────────
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3026
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+
+          # ── Resource Limits ─────────────────────────────────
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+
+          # ── Persistent Volume for SQLite ────────────────────
+          volumeMounts:
+            - name: central-logging-storage
+              mountPath: /app/data
+
+      volumes:
+        - name: central-logging-storage
+          persistentVolumeClaim:
+            claimName: central-logging-pvc
+
+---
+# PersistentVolumeClaim for SQLite database file
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: central-logging-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

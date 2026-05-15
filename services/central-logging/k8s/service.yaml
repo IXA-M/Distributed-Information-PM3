@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: central-logging-service
+  namespace: default
+  labels:
+    app: central-logging
+spec:
+  type: ClusterIP             # Internal only — not exposed outside the cluster
+  selector:
+    app: central-logging      # Routes traffic to pods with this label
+  ports:
+    - name: http
+      protocol: TCP
+      port: 3026              # Port other services use to reach central-logging
+      targetPort: 3026        # Port the container listens on

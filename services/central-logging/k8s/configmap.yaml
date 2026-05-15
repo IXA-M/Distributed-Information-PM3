@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: central-logging-config
+  namespace: default
+  labels:
+    app: central-logging
+data:
+  NODE_ENV: "production"
+  PORT: "3026"
+  KAFKA_BROKER: "kafka-service:9092"
+  DB_PATH: "/app/data/central_logging.db"
