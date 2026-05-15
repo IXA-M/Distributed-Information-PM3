@@ -1,3 +1,5 @@
+require('./tracing');
+require('./tracing');
 const app = require("./app");
 const { startConsumer, stopConsumer } = require("./consumer");
 const { info, error } = require("./logger");
@@ -20,3 +22,5 @@ process.on("SIGINT", async () => {
   await stopConsumer();
   server.close(() => process.exit(0));
 });
+
+
