@@ -17,8 +17,6 @@ jobs:
       image_namespace: ${{ steps.vars.outputs.image_namespace }}
       chunk_catalog_image: ${{ steps.vars.outputs.chunk_catalog_image }}
       chunk_location_image: ${{ steps.vars.outputs.chunk_location_image }}
-      audit_log_image: ${{ steps.vars.outputs.audit_log_image }}
-      central_logging_image: ${{ steps.vars.outputs.central_logging_image }}
     steps:
       - name: Compute image names
         id: vars
@@ -28,8 +26,6 @@ jobs:
           echo "image_namespace=${image_namespace}" >> "$GITHUB_OUTPUT"
           echo "chunk_catalog_image=ghcr.io/${image_namespace}/chunk-catalog" >> "$GITHUB_OUTPUT"
           echo "chunk_location_image=ghcr.io/${image_namespace}/chunk-location" >> "$GITHUB_OUTPUT"
-          echo "audit_log_image=ghcr.io/${image_namespace}/audit-log" >> "$GITHUB_OUTPUT"
-          echo "central_logging_image=ghcr.io/${image_namespace}/central-logging" >> "$GITHUB_OUTPUT"
 
   lint:
     name: Lint
@@ -37,13 +33,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - name: Install dependencies
         run: npm ci
+
       - name: Run static analysis
         run: npm run lint
 
@@ -54,13 +53,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - name: Install dependencies
         run: npm ci
+
       - name: Verify workspace build/install stage
         run: npm run build
 
@@ -71,30 +73,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - name: Install dependencies
         run: npm ci
-      - name: Test audit-log with coverage
-        run: |
-          cd services/audit-log
-          npm ci
-          npm test -- --coverage
-      - name: Test central-logging with coverage
-        run: |
-          cd services/central-logging
-          npm ci
-          npm test -- --coverage
-      - name: Upload coverage reports
+
+      - name: Run unit and integration tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
           path: |
-            services/audit-log/coverage
-            services/central-logging/coverage
+            services/chunk-catalog/tests/coverage
+            services/chunk-location/tests/coverage
 
   docker-build:
     name: Docker Build
@@ -105,32 +103,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: Build chunk-catalog image
         uses: docker/build-push-action@v6
         with:
           context: ./services/chunk-catalog
           push: false
           tags: ${{ needs.prepare.outputs.chunk_catalog_image }}:${{ github.sha }}
+
       - name: Build chunk-location image
         uses: docker/build-push-action@v6
         with:
           context: ./services/chunk-location
           push: false
           tags: ${{ needs.prepare.outputs.chunk_location_image }}:${{ github.sha }}
-      - name: Build audit-log image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./services/audit-log
-          push: false
-          tags: ${{ needs.prepare.outputs.audit_log_image }}:${{ github.sha }}
-      - name: Build central-logging image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./services/central-logging
-          push: false
-          tags: ${{ needs.prepare.outputs.central_logging_image }}:${{ github.sha }}
 
   push:
     name: Push
@@ -145,14 +134,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: Build and push chunk-catalog
         uses: docker/build-push-action@v6
         with:
@@ -161,6 +153,7 @@ jobs:
           tags: |
             ${{ needs.prepare.outputs.chunk_catalog_image }}:${{ github.sha }}
             ${{ needs.prepare.outputs.chunk_catalog_image }}:latest
+
       - name: Build and push chunk-location
         uses: docker/build-push-action@v6
         with:
@@ -169,22 +162,6 @@ jobs:
           tags: |
             ${{ needs.prepare.outputs.chunk_location_image }}:${{ github.sha }}
             ${{ needs.prepare.outputs.chunk_location_image }}:latest
-      - name: Build and push audit-log
-        uses: docker/build-push-action@v6
-        with:
-          context: ./services/audit-log
-          push: true
-          tags: |
-            ${{ needs.prepare.outputs.audit_log_image }}:${{ github.sha }}
-            ${{ needs.prepare.outputs.audit_log_image }}:latest
-      - name: Build and push central-logging
-        uses: docker/build-push-action@v6
-        with:
-          context: ./services/central-logging
-          push: true
-          tags: |
-            ${{ needs.prepare.outputs.central_logging_image }}:${{ github.sha }}
-            ${{ needs.prepare.outputs.central_logging_image }}:latest
 
   deploy:
     name: Deploy
@@ -196,35 +173,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Helm
         uses: azure/setup-helm@v4
         with:
           version: v3.16.1
+
       - name: Lint chart
-        run: helm lint ./chart/cse474
+        run: helm lint ./chart
+
       - name: Render Helm release
         run: |
-          helm template cse474 ./chart/cse474 \
+          helm template cse474 ./chart \
             --set services.chunkCatalog.image.repository=${{ needs.prepare.outputs.chunk_catalog_image }} \
             --set services.chunkCatalog.image.tag=${{ github.sha }} \
             --set services.chunkLocation.image.repository=${{ needs.prepare.outputs.chunk_location_image }} \
             --set services.chunkLocation.image.tag=${{ github.sha }} \
-            --set services.auditLog.image.repository=${{ needs.prepare.outputs.audit_log_image }} \
-            --set services.auditLog.image.tag=${{ github.sha }} \
-            --set services.centralLogging.image.repository=${{ needs.prepare.outputs.central_logging_image }} \
-            --set services.centralLogging.image.tag=${{ github.sha }} \
             > rendered-manifests.yaml
+
       - name: Upload rendered manifests
         uses: actions/upload-artifact@v4
         with:
           name: rendered-manifests
           path: rendered-manifests.yaml
-      - name: Deploy to Kubernetes (if KUBECONFIG secret exists)
-        run: |
-          if [ -n "${{ secrets.KUBECONFIG }}" ]; then
-            echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig.yaml
-            export KUBECONFIG=kubeconfig.yaml
-            helm upgrade --install cse474 ./chart/cse474 --namespace cse474-prod --create-namespace
-          else
-            echo "No KUBECONFIG secret provided. Skipping actual deployment."
-          fi
