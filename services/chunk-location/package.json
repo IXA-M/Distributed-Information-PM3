@@ -1,0 +1,23 @@
+{
+  "name": "chunk-location",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "start": "pm2-runtime src/server.js --name chunk-location",
+    "dev": "node src/server.js",
+    "test": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mongodb": "^6.17.0",
+    "pm2": "^5.4.3",
+    "prom-client": "^15.1.3"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.1.4",
+    "supertest": "^7.1.1"
+  }
+}

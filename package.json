@@ -5,9 +5,11 @@
     "services/*"
   ],
   "scripts": {
-    "lint": "npm run lint --workspaces",
-    "coverage": "npm run coverage --workspaces && node scripts/write-coverage-summary.js",
+    "lint": "node scripts/lint.js",
+    "build": "npm run lint",
     "test": "npm run test --workspaces",
+    "coverage": "npm run test:coverage --workspaces --if-present && npm run coverage --workspaces --if-present && node scripts/write-coverage-summary.js",
+    "test:coverage": "npm run test:coverage --workspaces --if-present && npm run coverage --workspaces --if-present && node scripts/write-coverage-summary.js",
     "start:storage-gateway": "node services/storage-gateway/src/server.js",
     "start:replication-planner": "node services/replication-planner/src/worker.js",
     "start:pm2": "npx pm2-runtime ecosystem.config.js"

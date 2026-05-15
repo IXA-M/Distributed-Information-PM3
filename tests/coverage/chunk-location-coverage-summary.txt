@@ -1,0 +1,6 @@
+service=chunk-location
+statements=88.57%
+branches=67.09%
+functions=94.74%
+lines=88.57%
+framework=Jest + Supertest

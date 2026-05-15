@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: replication-planner
-          image: ghcr.io/ixa-m/distributed-information-pm3/replication-planner:latest
-          imagePullPolicy: IfNotPresent
+          image: docker.io/ahmedxdarwish/replication-planner:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           envFrom:

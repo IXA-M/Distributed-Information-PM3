@@ -1,35 +1,53 @@
 # Distributed Information PM3
 
-PM3 submission for a distributed information system built from two Node.js microservices:
+PM3 submission for a distributed information system built from four Node.js microservices:
 
+- `chunk-catalog`: stores chunk metadata for uploaded files.
+- `chunk-location`: stores replica locations for chunks.
 - `storage-gateway`: accepts chunk/object uploads, stores object bytes, publishes chunk events, and exposes object retrieval APIs.
 - `replication-planner`: consumes or receives chunk events and creates replication tasks according to the configured policy.
 
-The repository includes MVC-style service structure, Dockerfiles, Kubernetes manifests, a Helm chart, monitoring, tracing, automated tests, coverage reports, and a GitHub Actions CI/CD workflow.
+The repository includes service code, Dockerfiles, raw Kubernetes manifests, one combined Helm chart, monitoring, tracing, automated tests, coverage reports, and a GitHub Actions CI/CD workflow.
 
 ## Repository Structure
 
 ```text
 .github/workflows/        GitHub Actions CI/CD pipeline
-docs/                     API documentation notes
-helm/                     Single Helm chart for the full system
+chart/                    Single Helm chart for the full system
+docs/                     API and deployment documentation
 k8s/                      Raw Kubernetes manifests
-n8n/workflows/            n8n workflow export
-observability/            Prometheus and Grafana assets
+n8n/workflows/            n8n workflow exports
+observability/            Prometheus, Grafana, Loki, Promtail assets
 report/                   Report notes and evidence placeholders
-scripts/                  Local test/lint/coverage helpers
+scripts/                  Local lint and coverage helpers
 services/
-  replication-planner/    Replication Planner microservice
-  storage-gateway/        Storage Gateway microservice
-shared/                   Shared config, HTTP, Kafka, Mongo, logging, metrics, tracing
+  chunk-catalog/
+  chunk-location/
+  replication-planner/
+  storage-gateway/
+shared/                   Shared helpers used by storage-gateway and replication-planner
 tests/coverage/           Committed coverage summaries
 ```
 
 ## Services
 
-### Storage Gateway
+### Chunk Catalog
 
-Main endpoints:
+- `GET /health`
+- `GET /ready`
+- `GET /metrics`
+- `POST /chunks`
+- `GET /chunks?file_id=...`
+
+### Chunk Location
+
+- `GET /health`
+- `GET /ready`
+- `GET /metrics`
+- `POST /chunk-locations`
+- `GET /chunks/{id}/replicas`
+
+### Storage Gateway
 
 - `GET /health`
 - `GET /ready`
@@ -38,27 +56,13 @@ Main endpoints:
 - `PUT /objects/{chunk_id}`
 - `GET /objects/{chunk_id}`
 
-OpenAPI source:
-
-```text
-services/storage-gateway/openapi.yaml
-```
-
 ### Replication Planner
-
-Main endpoints:
 
 - `GET /health`
 - `GET /ready`
 - `GET /metrics`
 - `GET /docs`
 - `POST /replication/plan`
-
-OpenAPI source:
-
-```text
-services/replication-planner/openapi.yaml
-```
 
 ## Local Development
 
@@ -68,16 +72,16 @@ Install dependencies:
 npm install
 ```
 
+Run static analysis:
+
+```powershell
+npm run lint
+```
+
 Run all tests:
 
 ```powershell
 npm test
-```
-
-Run lint:
-
-```powershell
-npm run lint
 ```
 
 Generate coverage:
@@ -86,72 +90,44 @@ Generate coverage:
 npm run coverage
 ```
 
-Run a service directly:
-
-```powershell
-npm run start:storage-gateway
-npm run start:replication-planner
-```
-
-## Testing
-
-The project uses:
-
-- Jest for unit and integration tests
-- Supertest for HTTP integration tests
-- Jest coverage reports
-
-Current test coverage summaries are committed under:
-
-```text
-tests/coverage/
-services/storage-gateway/tests/coverage/
-services/replication-planner/tests/coverage/
-```
-
 ## Kubernetes And Helm
 
-Deploy the full system:
+Deploy the full system with the combined chart:
 
 ```powershell
-helm upgrade --install cse474 ./helm --namespace cse474-prod --create-namespace
+helm upgrade --install cse474 ./chart --namespace cse474-prod --create-namespace
 ```
 
-Check pods:
+Check status:
 
 ```powershell
 kubectl get pods -n cse474-prod
+kubectl get services -n cse474-prod
+kubectl get ingress -n cse474-prod
 ```
 
-The Helm chart deploys:
+The chart deploys:
 
-- `storage-gateway` with 2 replicas
-- `replication-planner` with 2 replicas
-- MongoDB
+- All four microservices
+- MongoDB for shared services
+- Per-service MongoDB for chunk-catalog and chunk-location
 - Kafka
 - Prometheus
 - Grafana
 - Loki
 - Jaeger
 - Ingress
-
-The raw Kubernetes manifests are also available under `k8s/`.
+- HPAs for microservices
 
 ## Observability
 
-Both services expose Prometheus metrics at:
+Metrics:
 
 ```text
-/metrics
+GET /metrics
 ```
 
-Both services emit OpenTelemetry traces to Jaeger through:
-
-```text
-OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
-```
-
-Useful local port-forwards:
+Useful port-forwards:
 
 ```powershell
 kubectl port-forward -n cse474-prod svc/prometheus 9090:9090
@@ -165,6 +141,13 @@ Grafana default credentials:
 admin / admin
 ```
 
+Expected Jaeger services:
+
+```text
+storage-gateway
+replication-planner
+```
+
 ## CI/CD
 
 Workflow file:
@@ -173,7 +156,7 @@ Workflow file:
 .github/workflows/ci-cd.yml
 ```
 
-The pipeline runs on pull requests and pushes to `main`. It performs linting, dependency installation, tests, coverage, Docker image build, DockerHub push, and Helm deployment.
+The pipeline runs on pull requests and pushes to `main`. It performs linting, dependency installation, tests with coverage, Docker image builds, image pushes, and Helm deployment.
 
 Required GitHub Actions secrets:
 
@@ -183,8 +166,9 @@ DOCKERHUB_TOKEN
 KUBE_CONFIG
 ```
 
-DockerHub image namespace:
+Image registries:
 
 ```text
-docker.io/ahmedxdarwish
+chunk-catalog and chunk-location: GHCR
+storage-gateway and replication-planner: DockerHub docker.io/ahmedxdarwish
 ```
