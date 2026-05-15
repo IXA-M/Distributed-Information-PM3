@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: Chunk Location Service
+  version: 1.0.0
+servers:
+  - url: http://localhost:3002
+paths:
+  /health:
+    get:
+      summary: Liveness check
+      responses:
+        '200':
+          description: Service is alive
+  /ready:
+    get:
+      summary: Readiness check
+      responses:
+        '200':
+          description: Service is ready
+        '503':
+          description: Service is not ready
+  /chunk-locations:
+    post:
+      summary: Register a replica location for a chunk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chunk_id, node_id]
+              properties:
+                chunk_id:
+                  type: string
+                node_id:
+                  type: string
+                status:
+                  type: string
+                  description: Replica status on the storage node
+                  example: active
+                last_verified:
+                  type: string
+                  format: date-time
+                  description: Timestamp of the latest replica verification
+      responses:
+        '201':
+          description: Replica location record created for the chunk and storage node
+        '409':
+          description: Replica already exists for chunk and node
+  /chunks/{id}/replicas:
+    get:
+      summary: List replica nodes for a chunk
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Replica nodes returned

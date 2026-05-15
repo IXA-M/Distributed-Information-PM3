@@ -6,6 +6,7 @@
   ],
   "scripts": {
     "test": "npm run test --workspaces",
+    "test:coverage": "npm run test:coverage --workspaces",
     "start:pm2": "npx pm2-runtime ecosystem.config.js"
   }
 }

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1778858681186" clover="3.2.0">
+  <project timestamp="1778858681186" name="All files">
+    <metrics statements="110" coveredstatements="98" conditionals="53" coveredconditionals="37" methods="27" coveredmethods="25" elements="190" coveredelements="160" complexity="0" loc="110" ncloc="110" packages="1" files="6" classes="6"/>
+    <file name="app.js" path="E:\PM2 Service\services\chunk-catalog\src\app.js">
+      <metrics statements="55" coveredstatements="54" conditionals="38" coveredconditionals="32" methods="9" coveredmethods="9"/>
+      <line num="1" count="2" type="stmt"/>
+      <line num="2" count="2" type="stmt"/>
+      <line num="4" count="2" type="stmt"/>
+      <line num="5" count="2" type="stmt"/>
+      <line num="7" count="2" type="stmt"/>
+      <line num="10" count="11" type="stmt"/>
+      <line num="11" count="11" type="stmt"/>
+      <line num="13" count="11" type="stmt"/>
+      <line num="14" count="17" type="cond" truecount="2" falsecount="0"/>
+      <line num="15" count="17" type="stmt"/>
+      <line num="18" count="11" type="stmt"/>
+      <line num="19" count="1" type="stmt"/>
+      <line num="26" count="11" type="stmt"/>
+      <line num="27" count="3" type="stmt"/>
+      <line num="28" count="3" type="stmt"/>
+      <line num="29" count="2" type="stmt"/>
+      <line num="35" count="1" type="stmt"/>
+      <line num="39" count="11" type="stmt"/>
+      <line num="40" count="9" type="stmt"/>
+      <line num="41" count="9" type="stmt"/>
+      <line num="42" count="8" type="stmt"/>
+      <line num="43" count="6" type="stmt"/>
+      <line num="47" count="3" type="stmt"/>
+      <line num="51" count="11" type="stmt"/>
+      <line num="52" count="3" type="stmt"/>
+      <line num="53" count="3" type="stmt"/>
+      <line num="54" count="3" type="cond" truecount="4" falsecount="0"/>
+      <line num="55" count="1" type="stmt"/>
+      <line num="60" count="2" type="stmt"/>
+      <line num="61" count="2" type="stmt"/>
+      <line num="63" count="1" type="stmt"/>
+      <line num="67" count="11" type="stmt"/>
+      <line num="68" count="1" type="stmt"/>
+      <line num="73" count="11" type="stmt"/>
+      <line num="74" count="5" type="cond" truecount="1" falsecount="1"/>
+      <line num="75" count="0" type="stmt"/>
+      <line num="78" count="5" type="cond" truecount="1" falsecount="1"/>
+      <line num="79" count="5" type="cond" truecount="1" falsecount="1"/>
+      <line num="80" count="5" type="cond" truecount="1" falsecount="1"/>
+      <line num="81" count="5" type="cond" truecount="1" falsecount="1"/>
+      <line num="83" count="5" type="stmt"/>
+      <line num="86" count="11" type="stmt"/>
+      <line num="90" count="9" type="stmt"/>
+      <line num="92" count="9" type="cond" truecount="5" falsecount="0"/>
+      <line num="93" count="1" type="stmt"/>
+      <line num="96" count="9" type="cond" truecount="4" falsecount="0"/>
+      <line num="97" count="1" type="stmt"/>
+      <line num="100" count="9" type="cond" truecount="5" falsecount="0"/>
+      <line num="101" count="1" type="stmt"/>
+      <line num="104" count="9" type="cond" truecount="4" falsecount="0"/>
+      <line num="105" count="1" type="stmt"/>
+      <line num="108" count="9" type="cond" truecount="2" falsecount="0"/>
+      <line num="109" count="1" type="stmt"/>
+      <line num="112" count="8" type="stmt"/>
+      <line num="120" count="2" type="stmt"/>
+    </file>
+    <file name="errors.js" path="E:\PM2 Service\services\chunk-catalog\src\errors.js">
+      <metrics statements="5" coveredstatements="5" conditionals="1" coveredconditionals="1" methods="1" coveredmethods="1"/>
+      <line num="3" count="5" type="stmt"/>
+      <line num="4" count="5" type="stmt"/>
+      <line num="5" count="5" type="stmt"/>
+      <line num="6" count="5" type="stmt"/>
+      <line num="10" count="3" type="stmt"/>
+    </file>
+    <file name="repository.js" path="E:\PM2 Service\services\chunk-catalog\src\repository.js">
+      <metrics statements="18" coveredstatements="17" conditionals="4" coveredconditionals="2" methods="7" coveredmethods="7"/>
+      <line num="1" count="2" type="stmt"/>
+      <line num="3" count="2" type="stmt"/>
+      <line num="6" count="4" type="stmt"/>
+      <line num="8" count="2" type="stmt"/>
+      <line num="9" count="2" type="stmt"/>
+      <line num="13" count="1" type="stmt"/>
+      <line num="17" count="6" type="stmt"/>
+      <line num="26" count="6" type="stmt"/>
+      <line num="27" count="6" type="stmt"/>
+      <line num="28" count="4" type="stmt"/>
+      <line num="30" count="2" type="cond" truecount="1" falsecount="1"/>
+      <line num="31" count="2" type="stmt"/>
+      <line num="39" count="0" type="stmt"/>
+      <line num="44" count="1" type="stmt"/>
+      <line num="45" count="1" type="stmt"/>
+      <line num="51" count="6" type="stmt"/>
+      <line num="62" count="6" type="cond" truecount="1" falsecount="1"/>
+      <line num="65" count="2" type="stmt"/>
+    </file>
+    <file name="response.js" path="E:\PM2 Service\services\chunk-catalog\src\response.js">
+      <metrics statements="3" coveredstatements="3" conditionals="1" coveredconditionals="0" methods="2" coveredmethods="2"/>
+      <line num="2" count="11" type="stmt"/>
+      <line num="13" count="6" type="stmt"/>
+      <line num="27" count="2" type="stmt"/>
+    </file>
+    <file name="server.js" path="E:\PM2 Service\services\chunk-catalog\src\server.js">
+      <metrics statements="8" coveredstatements="0" conditionals="4" coveredconditionals="0" methods="2" coveredmethods="0"/>
+      <line num="1" count="0" type="stmt"/>
+      <line num="3" count="0" type="cond" truecount="0" falsecount="2"/>
+      <line num="4" count="0" type="cond" truecount="0" falsecount="2"/>
+      <line num="7" count="0" type="stmt"/>
+      <line num="8" count="0" type="stmt"/>
+      <line num="11" count="0" type="stmt"/>
+      <line num="12" count="0" type="stmt"/>
+      <line num="13" count="0" type="stmt"/>
+    </file>
+    <file name="start.js" path="E:\PM2 Service\services\chunk-catalog\src\start.js">
+      <metrics statements="21" coveredstatements="19" conditionals="5" coveredconditionals="2" methods="6" coveredmethods="6"/>
+      <line num="1" count="1" type="stmt"/>
+      <line num="3" count="1" type="stmt"/>
+      <line num="4" count="1" type="stmt"/>
+      <line num="7" count="1" type="stmt"/>
+      <line num="8" count="1" type="stmt"/>
+      <line num="10" count="1" type="cond" truecount="1" falsecount="1"/>
+      <line num="11" count="1" type="stmt"/>
+      <line num="12" count="1" type="stmt"/>
+      <line num="13" count="1" type="stmt"/>
+      <line num="15" count="1" type="stmt"/>
+      <line num="17" count="1" type="stmt"/>
+      <line num="18" count="1" type="stmt"/>
+      <line num="21" count="1" type="stmt"/>
+      <line num="27" count="1" type="stmt"/>
+      <line num="28" count="1" type="stmt"/>
+      <line num="29" count="1" type="cond" truecount="1" falsecount="1"/>
+      <line num="30" count="0" type="stmt"/>
+      <line num="31" count="0" type="stmt"/>
+      <line num="34" count="1" type="stmt"/>
+      <line num="38" count="1" type="stmt"/>
+      <line num="43" count="1" type="stmt"/>
+    </file>
+  </project>
+</coverage>
