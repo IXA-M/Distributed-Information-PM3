@@ -77,4 +77,17 @@ describe("chunk-location integration", () => {
     expect(response.body.success).toBe(true);
     expect(response.body.data.status).toBe("ready");
   });
+
+  test("returns prometheus metrics after handling traffic", async () => {
+    await api.post("/chunk-locations").send({
+      chunk_id: "chunk-metrics",
+      node_id: "node-metrics"
+    }).expect(201);
+
+    const response = await api.get("/metrics").expect(200);
+
+    expect(response.text).toContain("http_requests_total");
+    expect(response.text).toContain("http_request_duration_seconds_bucket");
+    expect(response.text).toContain('service="chunk-location"');
+  });
 });

@@ -1,6 +1,15 @@
-# Team TODO:
-# Add scrape targets for every service before submission.
 global:
   scrape_interval: 15s
 
-scrape_configs: []
+scrape_configs:
+  - job_name: chunk-catalog
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - chunk-catalog:3001
+
+  - job_name: chunk-location
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - chunk-location:3002

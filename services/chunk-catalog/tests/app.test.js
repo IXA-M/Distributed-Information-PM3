@@ -176,6 +176,16 @@ describe("chunk-catalog app", () => {
     expect(response.body.error.code).toBe("SERVICE_NOT_READY");
   });
 
+  test("exposes prometheus metrics", async () => {
+    const app = createApp({ repository: createRepository() });
+
+    const response = await request(app).get("/metrics");
+
+    expect(response.statusCode).toBe(200);
+    expect(response.text).toContain("http_requests_total");
+    expect(response.text).toContain("http_request_duration_seconds");
+  });
+
   test("returns standard 404 response for unknown routes", async () => {
     const app = createApp({ repository: createRepository() });
 
