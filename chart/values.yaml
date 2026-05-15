@@ -1,0 +1,130 @@
+namespace:
+  create: true
+  name: cse474-prod
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+
+services:
+  chunkCatalog:
+    name: chunk-catalog
+    image:
+      repository: chunk-catalog
+      tag: latest
+      pullPolicy: IfNotPresent
+    command:
+      - node
+      - src/server.js
+    replicaCount: 2
+    containerPort: 3001
+    service:
+      type: ClusterIP
+      port: 3001
+    config:
+      PORT: "3001"
+    secret:
+      DATABASE_URL: mongodb://chunk-catalog-db:27017/chunk_catalog
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      startup:
+        path: /health
+        periodSeconds: 5
+        failureThreshold: 24
+      readiness:
+        path: /ready
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+    ingress:
+      host: chunk-catalog.local
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+    database:
+      enabled: true
+      name: chunk-catalog-db
+      image: mongo:7
+      port: 27017
+      initDatabase: chunk_catalog
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
+
+  chunkLocation:
+    name: chunk-location
+    image:
+      repository: chunk-location
+      tag: latest
+      pullPolicy: IfNotPresent
+    command:
+      - node
+      - src/server.js
+    replicaCount: 2
+    containerPort: 3002
+    service:
+      type: ClusterIP
+      port: 3002
+    config:
+      PORT: "3002"
+      NODE_REGISTRY_BASE_URL: http://node-registry:3017
+    secret:
+      DATABASE_URL: mongodb://chunk-location-db:27017/chunk_location
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      startup:
+        path: /health
+        periodSeconds: 5
+        failureThreshold: 24
+      readiness:
+        path: /ready
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+    ingress:
+      host: chunk-location.local
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+    database:
+      enabled: true
+      name: chunk-location-db
+      image: mongo:7
+      port: 27017
+      initDatabase: chunk_location
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi

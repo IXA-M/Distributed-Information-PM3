@@ -1,15 +1,26 @@
 # Kubernetes
 
-Keep shared Kubernetes manifests or Helm assets here.
+Keep shared Kubernetes manifests here. The team has already chosen the deployment structure.
 
-Suggested layout:
+Required layout:
 
 ```text
 k8s/
   namespace.yaml
+  ingress.yaml
   <service-name>/
+    configmap.yaml
+    secret.yaml
+    deployment.yaml
+    service.yaml
+    hpa.yaml
+    mongodb.yaml   # only if the service owns a database
 ```
 
-Team note:
+Rules:
 
-- Do not commit unfinished service-specific manifests to `main` unless the team has agreed on the deployment structure.
+- Keep service manifests under `k8s/<service-name>/`
+- Keep shared networking resources at the top level
+- Use namespace `cse474-prod`
+- Use consistent names such as `<service-name>-config`, `<service-name>-secret`, and `<service-name>-db`
+- Do not merge unfinished shared `k8s/` changes into `main`

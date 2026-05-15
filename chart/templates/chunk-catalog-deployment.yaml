@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.services.chunkCatalog.name }}
+  namespace: {{ include "cse474.namespace" . }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.services.chunkCatalog.name }}
+    {{- include "cse474.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.services.chunkCatalog.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.services.chunkCatalog.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.services.chunkCatalog.name }}
+        app.kubernetes.io/name: {{ .Values.services.chunkCatalog.name }}
+    spec:
+      containers:
+        - name: {{ .Values.services.chunkCatalog.name }}
+          image: "{{ .Values.services.chunkCatalog.image.repository }}:{{ .Values.services.chunkCatalog.image.tag }}"
+          imagePullPolicy: {{ .Values.services.chunkCatalog.image.pullPolicy }}
+          command:
+            {{- toYaml .Values.services.chunkCatalog.command | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.services.chunkCatalog.containerPort }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.services.chunkCatalog.name }}-config
+            - secretRef:
+                name: {{ .Values.services.chunkCatalog.name }}-secret
+          resources:
+            {{- toYaml .Values.services.chunkCatalog.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.services.chunkCatalog.probes.startup.path }}
+              port: {{ .Values.services.chunkCatalog.containerPort }}
+            periodSeconds: {{ .Values.services.chunkCatalog.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.services.chunkCatalog.probes.startup.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.services.chunkCatalog.probes.readiness.path }}
+              port: {{ .Values.services.chunkCatalog.containerPort }}
+            initialDelaySeconds: {{ .Values.services.chunkCatalog.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.services.chunkCatalog.probes.readiness.periodSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.services.chunkCatalog.probes.liveness.path }}
+              port: {{ .Values.services.chunkCatalog.containerPort }}
+            initialDelaySeconds: {{ .Values.services.chunkCatalog.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.services.chunkCatalog.probes.liveness.periodSeconds }}
