@@ -158,6 +158,8 @@ Workflow file:
 
 The pipeline runs on pull requests and pushes to `main`. It performs linting, dependency installation, tests with coverage, Docker image builds, image pushes, and Helm deployment.
 
+If `KUBE_CONFIG` points to a local-only cluster such as Minikube or Docker Desktop Kubernetes, GitHub Actions validates the Helm manifests with `helm template` instead of trying to deploy to a cluster it cannot reach.
+
 Required GitHub Actions secrets:
 
 ```text
