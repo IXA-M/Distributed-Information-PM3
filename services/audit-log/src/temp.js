@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const auditRouter = require("./routes/audit");
 
@@ -53,4 +53,3 @@ app.get('/metrics', async (req, res) => {
   res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
 });
-const { log } = require('./logger');
