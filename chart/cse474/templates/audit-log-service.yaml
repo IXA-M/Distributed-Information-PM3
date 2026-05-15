@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: audit-log-service
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: audit-log
+  ports:
+  - port: {{ .Values.services.auditLog.port }}
+    targetPort: {{ .Values.services.auditLog.port }}
+  type: ClusterIP

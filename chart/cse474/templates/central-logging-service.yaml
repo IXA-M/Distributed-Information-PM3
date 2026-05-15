@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: central-logging-service
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: central-logging
+  ports:
+  - port: {{ .Values.services.centralLogging.port }}
+    targetPort: {{ .Values.services.centralLogging.port }}
+  type: ClusterIP
