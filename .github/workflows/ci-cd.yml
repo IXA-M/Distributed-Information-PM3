@@ -231,6 +231,7 @@ jobs:
           version: v3.16.1
 
       - name: Configure kubeconfig
+        id: kubeconfig
         env:
           KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         run: |
@@ -250,7 +251,15 @@ jobs:
 
           chmod 600 ~/.kube/config
 
+          if grep -Eq '127\.0\.0\.1|localhost|kubernetes\.docker\.internal|minikube|docker-desktop|C:\\Users\\' ~/.kube/config; then
+            echo "::warning::KUBE_CONFIG points to a local Kubernetes cluster. GitHub Actions cannot reach it, so this run will validate Helm manifests without deploying."
+            echo "deploy_mode=mock" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_mode=real" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy with Helm
+        if: steps.kubeconfig.outputs.deploy_mode == 'real'
         run: |
           helm upgrade --install cse474 ./chart \
             --namespace cse474-prod \
@@ -262,3 +271,20 @@ jobs:
             --set imageRegistry=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE} \
             --set services.storageGateway.tag=${{ github.sha }} \
             --set services.replicationPlanner.tag=${{ github.sha }}
+
+      - name: Validate Helm manifests
+        if: steps.kubeconfig.outputs.deploy_mode == 'mock'
+        run: |
+          helm template cse474 ./chart \
+            --namespace cse474-prod \
+            --set services.chunkCatalog.image.repository=${{ needs.prepare.outputs.chunk_catalog_image }} \
+            --set services.chunkCatalog.image.tag=${{ github.sha }} \
+            --set services.chunkLocation.image.repository=${{ needs.prepare.outputs.chunk_location_image }} \
+            --set services.chunkLocation.image.tag=${{ github.sha }} \
+            --set imageRegistry=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE} \
+            --set services.storageGateway.tag=${{ github.sha }} \
+            --set services.replicationPlanner.tag=${{ github.sha }} \
+            > rendered-manifests.yaml
+
+          test -s rendered-manifests.yaml
+          echo "Validated Helm chart rendering for local-only kubeconfig."
