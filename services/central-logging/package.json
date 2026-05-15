@@ -1,22 +1,23 @@
 {
-  "name": "central-logging",
-  "version": "1.0.0",
-  "description": "Central Logging Microservice - Student 13",
-  "main": "src/index.js",
-  "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "pm2:start": "pm2 start ecosystem.config.js",
-    "pm2:stop": "pm2 stop central-logging",
-    "pm2:logs": "pm2 logs central-logging"
-  },
-  "dependencies": {
-    "better-sqlite3": "^9.4.3",
-    "express": "^4.18.2",
-    "kafkajs": "^2.2.4",
-    "uuid": "^9.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
-  }
+    "name":  "central-logging",
+    "version":  "1.0.0",
+    "description":  "Central Logging Microservice - Student 13",
+    "main":  "src/index.js",
+    "scripts":  {
+                    "start":  "node src/index.js",
+                    "dev":  "nodemon src/index.js",
+                    "pm2:start":  "pm2 start ecosystem.config.js",
+                    "pm2:stop":  "pm2 stop central-logging",
+                    "pm2:logs":  "pm2 logs central-logging"
+                },
+    "dependencies":  {
+                         "better-sqlite3":  "^9.4.3",
+                         "express":  "^4.18.2",
+                         "kafkajs":  "^2.2.4",
+                         "uuid":  "^9.0.0",
+                         "prom-client":  "^15.1.0"
+                     },
+    "devDependencies":  {
+                            "nodemon":  "^3.0.2"
+                        }
 }
