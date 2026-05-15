@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-log
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.services.auditLog.replicas }}
+  selector:
+    matchLabels:
+      app: audit-log
+  template:
+    metadata:
+      labels:
+        app: audit-log
+    spec:
+      containers:
+      - name: audit-log
+        image: "{{ .Values.services.auditLog.image.repository }}:{{ .Values.services.auditLog.image.tag }}"
+        imagePullPolicy: {{ .Values.services.auditLog.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.services.auditLog.port }}
+        env:
+        - name: PORT
+          value: "{{ .Values.services.auditLog.port }}"
+        - name: DB_PATH
+          value: "{{ .Values.services.auditLog.dbPath }}"
+        - name: KAFKA_BROKER
+          value: "{{ .Values.kafka.broker }}"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.services.auditLog.port }}
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: {{ .Values.services.auditLog.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: {{ .Values.services.auditLog.resources.requests.memory }}
+            cpu: {{ .Values.services.auditLog.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.services.auditLog.resources.limits.memory }}
+            cpu: {{ .Values.services.auditLog.resources.limits.cpu }}
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: audit-log-pvc
