@@ -1,0 +1,75 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAMESPACE: ahmedxdarwish
+
+jobs:
+  ci-cd:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build / install dependencies
+        run: npm ci
+
+      - name: Test unit and integration suites
+        run: npm test
+
+      - name: Generate coverage report
+        run: npm run coverage
+
+      - name: Build storage-gateway image
+        run: docker build -f services/storage-gateway/Dockerfile -t $REGISTRY/$IMAGE_NAMESPACE/storage-gateway:${{ github.sha }} .
+
+      - name: Build replication-planner image
+        run: docker build -f services/replication-planner/Dockerfile -t $REGISTRY/$IMAGE_NAMESPACE/replication-planner:${{ github.sha }} .
+
+      - name: Login to DockerHub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push images to DockerHub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker push $REGISTRY/$IMAGE_NAMESPACE/storage-gateway:${{ github.sha }}
+          docker push $REGISTRY/$IMAGE_NAMESPACE/replication-planner:${{ github.sha }}
+
+      - name: Setup Helm
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: azure/setup-helm@v4
+
+      - name: Configure kubeconfig
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Deploy with Helm
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          helm upgrade --install cse474 ./helm \
+            --namespace cse474-prod \
+            --create-namespace \
+            --set imageRegistry=$REGISTRY/$IMAGE_NAMESPACE \
+            --set services.storageGateway.tag=${{ github.sha }} \
+            --set services.replicationPlanner.tag=${{ github.sha }}

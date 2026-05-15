@@ -1,9 +1,9 @@
 # Observability
 
-Keep shared observability assets in this folder.
+This folder contains the observability submission artifacts:
 
-Expected contents for the assignment:
+- `prometheus.yml` scrapes `/metrics` from both services.
+- `grafana/distributed-information-dashboard.json` is a Grafana dashboard export.
+- `../report/tracing-placeholder.md` documents the expected Jaeger trace evidence to capture from the cluster.
 
-- `prometheus.yml`
-- `grafana/` dashboard exports
-- tracing screenshots or links in the report or root README
+Both services emit structured JSON logs and expose Prometheus text metrics at `GET /metrics`.

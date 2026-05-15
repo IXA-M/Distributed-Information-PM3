@@ -1,10 +1,11 @@
 # Docs
 
-Place shared documentation here.
+API documentation is available from each running service:
 
-Suggested contents:
+- Storage Gateway: `GET /docs` or `GET /api-docs`
+- Replication Planner: `GET /docs` or `GET /api-docs`
 
-- aggregated OpenAPI specs
-- architecture notes
-- deployment notes
-- screenshots or exported docs if needed
+The source OpenAPI files are committed under each service directory:
+
+- `services/storage-gateway/openapi.yaml`
+- `services/replication-planner/openapi.yaml`

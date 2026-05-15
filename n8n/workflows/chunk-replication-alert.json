@@ -1,0 +1,60 @@
+{
+  "name": "chunk-replication-alert",
+  "nodes": [
+    {
+      "parameters": { "path": "chunk-replication-alert", "httpMethod": "POST" },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "http://storage-gateway/objects/demo-chunk",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "{\"content\":\"demo payload\"}"
+      },
+      "id": "store-chunk",
+      "name": "Store Chunk",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://replication-planner/replication/plan",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "{\"topic\":\"upload.completed\",\"event\":{\"event_type\":\"upload.completed\",\"data\":{\"chunks\":[{\"chunk_id\":\"demo-chunk\"}]}}}"
+      },
+      "id": "plan-replication",
+      "name": "Plan Replication",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [480, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://notification-service/alerts",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "{\"message\":\"Replication plan created for demo-chunk\"}"
+      },
+      "id": "notify",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [720, 0]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Store Chunk", "type": "main", "index": 0 }]] },
+    "Store Chunk": { "main": [[{ "node": "Plan Replication", "type": "main", "index": 0 }]] },
+    "Plan Replication": { "main": [[{ "node": "Notify", "type": "main", "index": 0 }]] }
+  }
+}
