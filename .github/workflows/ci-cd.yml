@@ -191,6 +191,14 @@ jobs:
         run: |
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > "$KUBECONFIG"
           chmod 600 "$KUBECONFIG"
+          if ! kubectl config current-context >/dev/null 2>&1; then
+            first_context="$(kubectl config get-contexts -o name | head -n 1)"
+            if [ -z "$first_context" ]; then
+              echo "KUBE_CONFIG_DATA does not contain any Kubernetes contexts."
+              exit 1
+            fi
+            kubectl config use-context "$first_context"
+          fi
 
       - name: Verify cluster access
         shell: bash
