@@ -53,6 +53,8 @@ README.md
 - `report/`: screenshots or report assets
 - `n8n/workflows/`: exported n8n workflows
 
+Deployment structure decision: [docs/deployment-structure.md](/e:/PM2%20Service/docs/deployment-structure.md:1)
+
 ## Existing services
 
 ### Chunk Catalog

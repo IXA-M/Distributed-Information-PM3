@@ -21,3 +21,4 @@ Team rules:
 - Keep tests inside `tests/`.
 - Do not place shared infrastructure files inside a personal branch without coordinating.
 - Root-level `k8s/`, `.github/workflows/`, and `observability/` are shared team ownership areas.
+- Your matching Kubernetes manifests belong in `k8s/<service-name>/`.
