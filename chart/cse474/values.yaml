@@ -1,0 +1,62 @@
+namespace: cse474-prod
+
+services:
+  chunkCatalog:
+    image:
+      repository: ghcr.io/ixa-m/chunk-catalog
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicas: 2
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 256Mi
+        cpu: 300m
+  chunkLocation:
+    image:
+      repository: ghcr.io/ixa-m/chunk-location
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicas: 2
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 256Mi
+        cpu: 300m
+  auditLog:
+    image:
+      repository: ghcr.io/mostafazayedd/audit-log
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicas: 2
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 256Mi
+        cpu: 300m
+    port: 3025
+    dbPath: /app/data/audit_log.db
+  centralLogging:
+    image:
+      repository: ghcr.io/mostafazayedd/central-logging
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicas: 2
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 256Mi
+        cpu: 300m
+    port: 3026
+    dbPath: /app/data/central_logging.db
+
+kafka:
+  broker: kafka-service:9092
