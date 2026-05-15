@@ -170,6 +170,8 @@ jobs:
       - prepare
       - push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      KUBECONFIG: ${{ runner.temp }}/kubeconfig
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -187,8 +189,14 @@ jobs:
       - name: Configure kubeconfig
         shell: bash
         run: |
-          mkdir -p "$HOME/.kube"
-          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > "$HOME/.kube/config"
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > "$KUBECONFIG"
+          chmod 600 "$KUBECONFIG"
+
+      - name: Verify cluster access
+        shell: bash
+        run: |
+          kubectl config current-context
+          kubectl cluster-info
 
       - name: Deploy with Helm
         run: |
