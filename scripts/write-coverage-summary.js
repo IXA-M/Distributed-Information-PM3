@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const services = ["replication-planner", "storage-gateway"];
+const services = ["chunk-catalog", "chunk-location", "replication-planner", "storage-gateway"];
 const outputRoot = path.join(process.cwd(), "tests", "coverage");
 
 fs.mkdirSync(outputRoot, { recursive: true });
@@ -15,6 +15,10 @@ for (const service of services) {
     "coverage",
     "coverage-final.json"
   );
+  if (!fs.existsSync(coveragePath)) {
+    continue;
+  }
+
   const coverage = JSON.parse(fs.readFileSync(coveragePath, "utf8"));
   const summary = summarize(coverage);
   const content = [

@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: storage-gateway
-          image: ghcr.io/ixa-m/distributed-information-pm3/storage-gateway:latest
-          imagePullPolicy: IfNotPresent
+          image: docker.io/ahmedxdarwish/storage-gateway:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           envFrom:

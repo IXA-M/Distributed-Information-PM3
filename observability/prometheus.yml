@@ -2,11 +2,26 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
+  - job_name: chunk-catalog
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - chunk-catalog:3001
+
+  - job_name: chunk-location
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - chunk-location:3002
+
   - job_name: storage-gateway
     metrics_path: /metrics
     static_configs:
-      - targets: ["storage-gateway:80", "localhost:3019"]
+      - targets:
+          - storage-gateway:80
+
   - job_name: replication-planner
     metrics_path: /metrics
     static_configs:
-      - targets: ["replication-planner:80", "localhost:3020"]
+      - targets:
+          - replication-planner:80

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.services.chunkLocation.name }}-config
+  namespace: {{ include "cse474.namespace" . }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.services.chunkLocation.name }}
+    {{- include "cse474.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.services.chunkLocation.config }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

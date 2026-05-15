@@ -1,10 +1,32 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: distributed-information
+  name: pm3-services
   namespace: cse474-prod
+  annotations:
+    kubernetes.io/ingress.class: nginx
 spec:
   rules:
+    - host: chunk-catalog.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: chunk-catalog
+                port:
+                  number: 3001
+    - host: chunk-location.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: chunk-location
+                port:
+                  number: 3002
     - host: distributed-information.local
       http:
         paths:

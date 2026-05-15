@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chunk-catalog-db
+  namespace: cse474-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chunk-catalog-db
+  template:
+    metadata:
+      labels:
+        app: chunk-catalog-db
+        app.kubernetes.io/name: chunk-catalog-db
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: chunk_catalog
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chunk-catalog-db
+  namespace: cse474-prod
+spec:
+  selector:
+    app: chunk-catalog-db
+  ports:
+    - name: mongo
+      port: 27017
+      targetPort: 27017

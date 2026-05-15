@@ -1,0 +1,202 @@
+namespace:
+  create: true
+  name: cse474-prod
+
+imageRegistry: docker.io/ahmedxdarwish
+imagePullPolicy: Always
+
+config:
+  NODE_ENV: production
+  MONGO_URI: mongodb://mongodb:27017
+  MONGO_DB: distributed_information
+  KAFKA_BROKERS: kafka:9092
+  DEFAULT_REPLICATION_FACTOR: "3"
+  DEFAULT_TARGET_NODES: storage-node-a,storage-node-b,storage-node-c
+  PLANNER_INPUT_TOPICS: upload.completed,node.heartbeat.missed,integrity.failed
+  OBJECT_STORAGE_ROOT: /data/objects
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+  OTEL_TRACES_EXPORTER: otlp
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  host: distributed-information.local
+
+services:
+  chunkCatalog:
+    name: chunk-catalog
+    image:
+      repository: chunk-catalog
+      tag: latest
+      pullPolicy: IfNotPresent
+    command:
+      - node
+      - src/server.js
+    replicaCount: 2
+    containerPort: 3001
+    service:
+      type: ClusterIP
+      port: 3001
+    config:
+      PORT: "3001"
+    secret:
+      DATABASE_URL: mongodb://chunk-catalog-db:27017/chunk_catalog
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      startup:
+        path: /health
+        periodSeconds: 5
+        failureThreshold: 24
+      readiness:
+        path: /ready
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+    ingress:
+      host: chunk-catalog.local
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+    database:
+      enabled: true
+      name: chunk-catalog-db
+      image: mongo:7
+      port: 27017
+      initDatabase: chunk_catalog
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
+
+  chunkLocation:
+    name: chunk-location
+    image:
+      repository: chunk-location
+      tag: latest
+      pullPolicy: IfNotPresent
+    command:
+      - node
+      - src/server.js
+    replicaCount: 2
+    containerPort: 3002
+    service:
+      type: ClusterIP
+      port: 3002
+    config:
+      PORT: "3002"
+      NODE_REGISTRY_BASE_URL: http://node-registry:3017
+    secret:
+      DATABASE_URL: mongodb://chunk-location-db:27017/chunk_location
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      startup:
+        path: /health
+        periodSeconds: 5
+        failureThreshold: 24
+      readiness:
+        path: /ready
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+    ingress:
+      host: chunk-location.local
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+    database:
+      enabled: true
+      name: chunk-location-db
+      image: mongo:7
+      port: 27017
+      initDatabase: chunk_location
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
+
+  storageGateway:
+    name: storage-gateway
+    image: storage-gateway
+    tag: latest
+    replicas: 2
+    port: 3000
+    service:
+      type: ClusterIP
+      port: 80
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  replicationPlanner:
+    name: replication-planner
+    image: replication-planner
+    tag: latest
+    replicas: 2
+    port: 3000
+    service:
+      type: ClusterIP
+      port: 80
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+dependencies:
+  mongodb:
+    enabled: true
+    image: mongo:7
+  kafka:
+    enabled: true
+    image: apache/kafka:3.7.0
+
+monitoring:
+  enabled: true
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    scrapeInterval: 15s
+  grafana:
+    image: grafana/grafana:11.2.0
+    adminUser: admin
+    adminPassword: admin
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+  loki:
+    image: grafana/loki:3.1.1
