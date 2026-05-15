@@ -78,4 +78,19 @@ describe("chunk-catalog integration", () => {
     expect(response.body.success).toBe(true);
     expect(response.body.data.status).toBe("ready");
   });
+
+  test("returns prometheus metrics after handling traffic", async () => {
+    await api.post("/chunks").send({
+      file_id: "file-metrics",
+      chunk_no: 0,
+      hash: "hash-metrics",
+      size: 64
+    }).expect(201);
+
+    const response = await api.get("/metrics").expect(200);
+
+    expect(response.text).toContain("http_requests_total");
+    expect(response.text).toContain("http_request_duration_seconds_bucket");
+    expect(response.text).toContain('service="chunk-catalog"');
+  });
 });

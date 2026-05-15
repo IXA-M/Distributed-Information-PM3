@@ -1,9 +1,10 @@
 const { MongoClient } = require("mongodb");
 
 const { createApp } = require("./app");
+const { createObservability } = require("./observability");
 const { createChunkLocationRepository } = require("./repository");
 
-async function createServer({ databaseUrl, port = 0 }) {
+async function createServer({ databaseUrl, port = 0, observability = createObservability("chunk-location") }) {
   const client = new MongoClient(databaseUrl);
   await client.connect();
 
@@ -12,7 +13,7 @@ async function createServer({ databaseUrl, port = 0 }) {
   const repository = createChunkLocationRepository(collection);
   await repository.init();
 
-  const app = createApp({ repository });
+  const app = createApp({ repository, observability });
 
   const server = await new Promise((resolve) => {
     const instance = app.listen(port, () => resolve(instance));

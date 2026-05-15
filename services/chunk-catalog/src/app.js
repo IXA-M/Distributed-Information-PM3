@@ -2,16 +2,29 @@ const express = require("express");
 const { randomUUID } = require("crypto");
 
 const { AppError } = require("./errors");
+const { createObservability } = require("./observability");
 const { successResponse, errorResponse } = require("./response");
 
 const SERVICE_NAME = "chunk-catalog";
 
-function createApp({ repository }) {
+function createApp({ repository, observability = createObservability(SERVICE_NAME) }) {
   const app = express();
   app.use(express.json());
 
   app.use((req, res, next) => {
     req.requestId = req.header("x-request-id") || randomUUID();
+    next();
+  });
+  app.use(observability.requestContextMiddleware);
+
+  app.use((req, res, next) => {
+    observability.log("info", "Incoming request", {
+      requestId: req.requestId,
+      traceId: req.traceId,
+      spanId: req.spanId,
+      method: req.method,
+      path: req.path
+    });
     next();
   });
 
@@ -33,6 +46,14 @@ function createApp({ repository }) {
       );
     } catch (error) {
       next(new AppError(503, "SERVICE_NOT_READY", "Database connection is not ready."));
+    }
+  });
+
+  app.get("/metrics", async (req, res, next) => {
+    try {
+      await observability.metricsHandler(req, res);
+    } catch (error) {
+      next(error);
     }
   });
 
@@ -65,6 +86,13 @@ function createApp({ repository }) {
   });
 
   app.use((req, res) => {
+    observability.log("warn", "Route not found", {
+      requestId: req.requestId || randomUUID(),
+      traceId: req.traceId,
+      spanId: req.spanId,
+      method: req.method,
+      path: req.path
+    });
     res.status(404).json(
       errorResponse(SERVICE_NAME, req.requestId || randomUUID(), "NOT_FOUND", "Route not found.", {})
     );
@@ -79,6 +107,17 @@ function createApp({ repository }) {
     const code = error.code || "INTERNAL_SERVER_ERROR";
     const message = error.statusCode ? error.message : "Unexpected server error.";
     const details = error.details || {};
+
+    observability.log("error", "Request failed", {
+      requestId: req.requestId,
+      traceId: req.traceId,
+      spanId: req.spanId,
+      method: req.method,
+      path: req.path,
+      statusCode,
+      code,
+      details
+    });
 
     res.status(statusCode).json(errorResponse(SERVICE_NAME, req.requestId, code, message, details));
   });
