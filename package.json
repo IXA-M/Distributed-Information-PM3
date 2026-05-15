@@ -5,7 +5,10 @@
     "services/*"
   ],
   "scripts": {
+    "lint": "node scripts/lint.js",
+    "build": "npm ci --workspaces --include-workspace-root",
     "test": "npm run test --workspaces",
+    "test:coverage": "npm run test:coverage --workspaces",
     "start:pm2": "npx pm2-runtime ecosystem.config.js"
   }
 }
