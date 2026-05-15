@@ -231,9 +231,24 @@ jobs:
           version: v3.16.1
 
       - name: Configure kubeconfig
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          normalized_config="$(printf '%s' "$KUBE_CONFIG" | tr -d '\r\n ')"
+
+          if printf '%s' "$normalized_config" | base64 -d > ~/.kube/config 2>/dev/null && grep -q '^apiVersion:' ~/.kube/config; then
+            echo "Loaded base64-encoded kubeconfig"
+          else
+            printf '%s' "$KUBE_CONFIG" > ~/.kube/config
+          fi
+
+          if ! grep -q '^apiVersion:' ~/.kube/config; then
+            echo "::error::KUBE_CONFIG must be either raw kubeconfig YAML or a base64-encoded kubeconfig."
+            exit 1
+          fi
+
+          chmod 600 ~/.kube/config
 
       - name: Deploy with Helm
         run: |
