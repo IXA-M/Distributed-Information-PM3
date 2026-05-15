@@ -1,0 +1,6 @@
+service=replication-planner
+statements=96.58%
+branches=64.76%
+functions=100.00%
+lines=96.58%
+framework=Jest + Supertest

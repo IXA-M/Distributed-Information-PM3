@@ -1,0 +1,6 @@
+service=storage-gateway
+statements=90.48%
+branches=58.62%
+functions=100.00%
+lines=90.48%
+framework=Jest + Supertest

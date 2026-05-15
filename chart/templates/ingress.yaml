@@ -33,4 +33,44 @@ spec:
                 name: {{ .Values.services.chunkLocation.name }}
                 port:
                   number: {{ .Values.services.chunkLocation.service.port }}
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /storage
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.storageGateway.name }}
+                port:
+                  number: {{ .Values.services.storageGateway.service.port }}
+          - path: /planner
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.replicationPlanner.name }}
+                port:
+                  number: {{ .Values.services.replicationPlanner.service.port }}
+          {{- if .Values.monitoring.enabled }}
+          - path: /prometheus
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: 9090
+          - path: /grafana
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: 3000
+          - path: /jaeger
+            pathType: Prefix
+            backend:
+              service:
+                name: jaeger
+                port:
+                  number: 16686
+          {{- end }}
 {{- end }}

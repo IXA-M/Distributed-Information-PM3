@@ -1,24 +1,99 @@
-# Services Layout
+# Services
 
-Each team-owned microservice should live under `services/<service-name>/`.
+The repository contains four Node.js microservices.
 
-Recommended structure:
+## Service Folders
 
 ```text
-services/<service-name>/
-  src/
-  tests/
-  sql/                  # optional, if the service uses seed/init files
-  Dockerfile
-  package.json
-  openapi.yaml
+services/chunk-catalog/
+services/chunk-location/
+services/storage-gateway/
+services/replication-planner/
 ```
 
-Team rules:
+Each service includes its own source code, tests, Dockerfile, and OpenAPI documentation where applicable.
 
-- Keep service-specific code inside the service folder.
-- Expose `GET /health` and `GET /ready`.
-- Keep tests inside `tests/`.
-- Do not place shared infrastructure files inside a personal branch without coordinating.
-- Root-level `k8s/`, `.github/workflows/`, and `observability/` are shared team ownership areas.
-- Your matching Kubernetes manifests belong in `k8s/<service-name>/`.
+## Chunk Catalog
+
+Purpose:
+
+- Stores chunk metadata.
+- Provides file-to-chunk lookup.
+
+Endpoints:
+
+```text
+GET /health
+GET /ready
+GET /metrics
+POST /chunks
+GET /chunks?file_id=...
+```
+
+## Chunk Location
+
+Purpose:
+
+- Stores chunk replica locations.
+- Provides chunk-to-node lookup.
+
+Endpoints:
+
+```text
+GET /health
+GET /ready
+GET /metrics
+POST /chunk-locations
+GET /chunks/{id}/replicas
+```
+
+## Storage Gateway
+
+Purpose:
+
+- Stores object bytes for chunks.
+- Persists object metadata.
+- Publishes chunk stored events to Kafka.
+
+Endpoints:
+
+```text
+GET /health
+GET /ready
+GET /metrics
+GET /docs
+PUT /objects/{chunk_id}
+GET /objects/{chunk_id}
+```
+
+## Replication Planner
+
+Purpose:
+
+- Builds replication plans from upload, heartbeat, and integrity events.
+- Persists replication plan runs.
+- Publishes replication task events to Kafka.
+
+Endpoints:
+
+```text
+GET /health
+GET /ready
+GET /metrics
+GET /docs
+POST /replication/plan
+```
+
+## Commands
+
+Run all tests:
+
+```powershell
+npm test
+```
+
+Generate coverage:
+
+```powershell
+npm run coverage
+```

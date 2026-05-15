@@ -6,9 +6,27 @@
   ],
   "scripts": {
     "lint": "node scripts/lint.js",
-    "build": "npm ci --workspaces --include-workspace-root",
+    "build": "npm run lint",
     "test": "npm run test --workspaces",
-    "test:coverage": "npm run test:coverage --workspaces",
+    "coverage": "npm run test:coverage --workspaces --if-present && npm run coverage --workspaces --if-present && node scripts/write-coverage-summary.js",
+    "test:coverage": "npm run test:coverage --workspaces --if-present && npm run coverage --workspaces --if-present && node scripts/write-coverage-summary.js",
+    "start:storage-gateway": "node services/storage-gateway/src/server.js",
+    "start:replication-planner": "node services/replication-planner/src/worker.js",
     "start:pm2": "npx pm2-runtime ecosystem.config.js"
+  },
+  "dependencies": {
+    "@opentelemetry/auto-instrumentations-node": "^0.57.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
+    "@opentelemetry/resources": "^1.30.1",
+    "@opentelemetry/sdk-node": "^0.57.0",
+    "@opentelemetry/semantic-conventions": "^1.30.0",
+    "express": "^4.19.2",
+    "kafkajs": "^2.2.4",
+    "mongodb": "^6.8.0",
+    "pm2": "^5.4.2"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
   }
 }

@@ -1,100 +1,174 @@
 # Distributed Information PM3
 
-Shared repository for the PM3 microservices submission. The final graded version is the merged state of the `main` branch, so all team services and shared infrastructure must live here before the deadline.
+PM3 submission for a distributed information system built from four Node.js microservices:
 
-## Current status
+- `chunk-catalog`: stores chunk metadata for uploaded files.
+- `chunk-location`: stores replica locations for chunks.
+- `storage-gateway`: accepts chunk/object uploads, stores object bytes, publishes chunk events, and exposes object retrieval APIs.
+- `replication-planner`: consumes or receives chunk events and creates replication tasks according to the configured policy.
 
-This base structure is ready for team integration.
+The repository includes service code, Dockerfiles, raw Kubernetes manifests, one combined Helm chart, monitoring, tracing, automated tests, coverage reports, and a GitHub Actions CI/CD workflow.
 
-Currently implemented services:
-
-- `chunk-catalog`
-- `chunk-location`
-
-Other teammates should add their services under `services/` on their own branches, then merge into the shared repository.
-
-## Repository structure
+## Repository Structure
 
 ```text
+.github/workflows/        GitHub Actions CI/CD pipeline
+chart/                    Single Helm chart for the full system
+docs/                     API and deployment documentation
+k8s/                      Raw Kubernetes manifests
+n8n/workflows/            n8n workflow exports
+observability/            Prometheus, Grafana, Loki, Promtail assets
+report/                   Report notes and evidence placeholders
+scripts/                  Local lint and coverage helpers
 services/
   chunk-catalog/
   chunk-location/
-  <teammate-service>/
-.github/
-  workflows/
-k8s/
-docs/
-observability/
-  grafana/
-n8n/
-  workflows/
-report/
-docker-compose.yml
-ecosystem.config.js
-package.json
-README.md
+  replication-planner/
+  storage-gateway/
+shared/                   Shared helpers used by storage-gateway and replication-planner
+tests/coverage/           Committed coverage summaries
 ```
 
-## Team rules
-
-- Every microservice lives in `services/<service-name>/`.
-- Shared infrastructure stays at the repository root.
-- Use one branch per person or per service, then merge early and often.
-- The final `main` branch must be runnable and complete.
-- Do not keep team services in separate repositories.
-
-## Shared folders
-
-- `services/`: all microservices
-- `k8s/`: Kubernetes manifests and shared deployment files
-- `.github/workflows/`: CI/CD workflows
-- `observability/`: Prometheus config and Grafana exports
-- `docs/`: shared documentation and aggregated API docs
-- `report/`: screenshots or report assets
-- `n8n/workflows/`: exported n8n workflows
-
-Deployment structure decision: [docs/deployment-structure.md](/e:/PM2%20Service/docs/deployment-structure.md:1)
-
-## Existing services
+## Services
 
 ### Chunk Catalog
 
+- `GET /health`
+- `GET /ready`
+- `GET /metrics`
 - `POST /chunks`
 - `GET /chunks?file_id=...`
-- OpenAPI: [openapi.yaml](</e:/PM2 Service/services/chunk-catalog/openapi.yaml>)
 
 ### Chunk Location
 
+- `GET /health`
+- `GET /ready`
+- `GET /metrics`
 - `POST /chunk-locations`
 - `GET /chunks/{id}/replicas`
-- OpenAPI: [openapi.yaml](</e:/PM2 Service/services/chunk-location/openapi.yaml>)
 
-Note: `chunk-location` uses composite uniqueness on `(chunk_id, node_id)` so replicas can be stored correctly without duplicates.
+### Storage Gateway
 
-## Local development
+- `GET /health`
+- `GET /ready`
+- `GET /metrics`
+- `GET /docs`
+- `PUT /objects/{chunk_id}`
+- `GET /objects/{chunk_id}`
+
+### Replication Planner
+
+- `GET /health`
+- `GET /ready`
+- `GET /metrics`
+- `GET /docs`
+- `POST /replication/plan`
+
+## Local Development
 
 Install dependencies:
 
-```bash
+```powershell
 npm install
 ```
 
-Run all workspace tests:
+Run static analysis:
 
-```bash
+```powershell
+npm run lint
+```
+
+Run all tests:
+
+```powershell
 npm test
 ```
 
-Run PM2 services currently configured in `ecosystem.config.js`:
+Generate coverage:
 
-```bash
-npm run start:pm2
+```powershell
+npm run coverage
 ```
 
-## Next team tasks
+## Kubernetes And Helm
 
-- Add the remaining service folders under `services/`
-- Extend `docker-compose.yml` for the other services
-- Add shared CI/CD in `.github/workflows/`
-- Complete root `k8s/` manifests or Helm chart
-- Fill in `observability/prometheus.yml` and Grafana exports
+Deploy the full system with the combined chart:
+
+```powershell
+helm upgrade --install cse474 ./chart --namespace cse474-prod --create-namespace
+```
+
+Check status:
+
+```powershell
+kubectl get pods -n cse474-prod
+kubectl get services -n cse474-prod
+kubectl get ingress -n cse474-prod
+```
+
+The chart deploys:
+
+- All four microservices
+- MongoDB for shared services
+- Per-service MongoDB for chunk-catalog and chunk-location
+- Kafka
+- Prometheus
+- Grafana
+- Loki
+- Jaeger
+- Ingress
+- HPAs for microservices
+
+## Observability
+
+Metrics:
+
+```text
+GET /metrics
+```
+
+Useful port-forwards:
+
+```powershell
+kubectl port-forward -n cse474-prod svc/prometheus 9090:9090
+kubectl port-forward -n cse474-prod svc/grafana 3000:3000
+kubectl port-forward -n cse474-prod svc/jaeger 16686:16686
+```
+
+Grafana default credentials:
+
+```text
+admin / admin
+```
+
+Expected Jaeger services:
+
+```text
+storage-gateway
+replication-planner
+```
+
+## CI/CD
+
+Workflow file:
+
+```text
+.github/workflows/ci-cd.yml
+```
+
+The pipeline runs on pull requests and pushes to `main`. It performs linting, dependency installation, tests with coverage, Docker image builds, image pushes, and Helm deployment.
+
+Required GitHub Actions secrets:
+
+```text
+DOCKERHUB_USERNAME
+DOCKERHUB_TOKEN
+KUBE_CONFIG
+```
+
+Image registries:
+
+```text
+chunk-catalog and chunk-location: GHCR
+storage-gateway and replication-planner: DockerHub docker.io/ahmedxdarwish
+```
