@@ -1,0 +1,56 @@
+openapi: 3.0.3
+info:
+  title: Chunk Catalog Service
+  version: 1.0.0
+servers:
+  - url: http://localhost:3001
+paths:
+  /health:
+    get:
+      summary: Liveness check
+      responses:
+        '200':
+          description: Service is alive
+  /ready:
+    get:
+      summary: Readiness check
+      responses:
+        '200':
+          description: Service is ready
+        '503':
+          description: Service is not ready
+  /chunks:
+    post:
+      summary: Create a chunk record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [file_id, chunk_no, hash, size]
+              properties:
+                file_id:
+                  type: string
+                chunk_no:
+                  type: integer
+                hash:
+                  type: string
+                size:
+                  type: integer
+      responses:
+        '201':
+          description: Chunk created
+        '409':
+          description: Chunk already exists for file and chunk number
+    get:
+      summary: List chunks by file id
+      parameters:
+        - in: query
+          name: file_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chunks returned
