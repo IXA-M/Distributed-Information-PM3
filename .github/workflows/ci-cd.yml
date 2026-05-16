@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - auth-service
   pull_request:
     branches:
       - main
@@ -23,6 +24,8 @@ jobs:
       chunk_location_image: ${{ steps.vars.outputs.chunk_location_image }}
       storage_gateway_image: ${{ steps.vars.outputs.storage_gateway_image }}
       replication_planner_image: ${{ steps.vars.outputs.replication_planner_image }}
+      auth_service_image: ${{ steps.vars.outputs.auth_service_image }}
+      user_profile_service_image: ${{ steps.vars.outputs.user_profile_service_image }}
     steps:
       - name: Compute image names
         id: vars
@@ -34,6 +37,8 @@ jobs:
           echo "chunk_location_image=${GHCR_REGISTRY}/${ghcr_namespace}/chunk-location" >> "$GITHUB_OUTPUT"
           echo "storage_gateway_image=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/storage-gateway" >> "$GITHUB_OUTPUT"
           echo "replication_planner_image=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/replication-planner" >> "$GITHUB_OUTPUT"
+          echo "auth_service_image=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/auth-service" >> "$GITHUB_OUTPUT"
+          echo "user_profile_service_image=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/user-profile-service" >> "$GITHUB_OUTPUT"
 
   lint:
     name: Lint
@@ -145,13 +150,27 @@ jobs:
           push: false
           tags: ${{ needs.prepare.outputs.replication_planner_image }}:${{ github.sha }}
 
+      - name: Build auth-service image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/auth-service
+          push: false
+          tags: ${{ needs.prepare.outputs.auth_service_image }}:${{ github.sha }}
+
+      - name: Build user-profile-service image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/user-profile-service
+          push: false
+          tags: ${{ needs.prepare.outputs.user_profile_service_image }}:${{ github.sha }}
+
   push:
     name: Push
     runs-on: ubuntu-latest
     needs:
       - prepare
       - docker-build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/auth-service')
     permissions:
       contents: read
       packages: write
@@ -214,13 +233,31 @@ jobs:
             ${{ needs.prepare.outputs.replication_planner_image }}:${{ github.sha }}
             ${{ needs.prepare.outputs.replication_planner_image }}:latest
 
+      - name: Build and push auth-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/auth-service
+          push: true
+          tags: |
+            ${{ needs.prepare.outputs.auth_service_image }}:${{ github.sha }}
+            ${{ needs.prepare.outputs.auth_service_image }}:latest
+
+      - name: Build and push user-profile-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/user-profile-service
+          push: true
+          tags: |
+            ${{ needs.prepare.outputs.user_profile_service_image }}:${{ github.sha }}
+            ${{ needs.prepare.outputs.user_profile_service_image }}:latest
+
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     needs:
       - prepare
       - push
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/auth-service')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -270,7 +307,9 @@ jobs:
             --set services.chunkLocation.image.tag=${{ github.sha }} \
             --set imageRegistry=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE} \
             --set services.storageGateway.tag=${{ github.sha }} \
-            --set services.replicationPlanner.tag=${{ github.sha }}
+            --set services.replicationPlanner.tag=${{ github.sha }} \
+            --set services.authService.tag=${{ github.sha }} \
+            --set services.userProfileService.tag=${{ github.sha }}
 
       - name: Validate Helm manifests
         if: steps.kubeconfig.outputs.deploy_mode == 'mock'
@@ -284,6 +323,8 @@ jobs:
             --set imageRegistry=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE} \
             --set services.storageGateway.tag=${{ github.sha }} \
             --set services.replicationPlanner.tag=${{ github.sha }} \
+            --set services.authService.tag=${{ github.sha }} \
+            --set services.userProfileService.tag=${{ github.sha }} \
             > rendered-manifests.yaml
 
           test -s rendered-manifests.yaml
