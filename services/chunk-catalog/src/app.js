@@ -2,6 +2,7 @@ const express = require("express");
 const { randomUUID } = require("crypto");
 
 const { AppError } = require("./errors");
+const authenticate = require("../../../shared/authenticate");
 const { createObservability } = require("./observability");
 const { successResponse, errorResponse } = require("./response");
 
@@ -57,7 +58,7 @@ function createApp({ repository, observability = createObservability(SERVICE_NAM
     }
   });
 
-  app.post("/chunks", async (req, res, next) => {
+  app.post("/chunks", authenticate, async (req, res, next) => {
     try {
       const payload = validateCreateChunk(req.body);
       const chunk = await repository.createChunk(payload);
@@ -69,7 +70,7 @@ function createApp({ repository, observability = createObservability(SERVICE_NAM
     }
   });
 
-  app.get("/chunks", async (req, res, next) => {
+  app.get("/chunks", authenticate, async (req, res, next) => {
     try {
       const fileId = req.query.file_id;
       if (!fileId || typeof fileId !== "string") {

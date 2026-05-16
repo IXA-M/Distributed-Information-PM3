@@ -2,6 +2,7 @@ const express = require("express");
 const { asyncHandler } = require("../../../../shared/http");
 const { createHealthController } = require("../controllers/health-controller");
 const { createObjectController } = require("../controllers/object-controller");
+const authenticate = require("../../../../shared/authenticate");
 
 function createStorageGatewayRouter({ objectStorageService, readyCheck }) {
   const router = express.Router();
@@ -14,8 +15,8 @@ function createStorageGatewayRouter({ objectStorageService, readyCheck }) {
 
   router.get("/health", healthController.health);
   router.get("/ready", asyncHandler(healthController.ready));
-  router.put("/objects/:chunk_id", rawBody, asyncHandler(objectController.putObject));
-  router.get("/objects/:chunk_id", asyncHandler(objectController.getObject));
+  router.put("/objects/:chunk_id", authenticate, rawBody, asyncHandler(objectController.putObject));
+  router.get("/objects/:chunk_id", authenticate, asyncHandler(objectController.getObject));
 
   return router;
 }

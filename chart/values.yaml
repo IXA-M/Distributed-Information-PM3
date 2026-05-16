@@ -16,6 +16,7 @@ config:
   OBJECT_STORAGE_ROOT: /data/objects
   OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
   OTEL_TRACES_EXPORTER: otlp
+  JWT_SECRET: "your-super-secret-jwt-key" # Replace with a strong, unique secret in production
 
 ingress:
   enabled: true
@@ -137,6 +138,126 @@ services:
       image: mongo:7
       port: 27017
       initDatabase: chunk_location
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
+
+  authService:
+    name: auth-service
+    image:
+      repository: auth-service
+      tag: latest
+      pullPolicy: IfNotPresent
+    command:
+      - node
+      - src/index.js
+    replicaCount: 2
+    containerPort: 3003
+    service:
+      type: ClusterIP
+      port: 3003
+    config:
+      PORT: "3003"
+    secret:
+      DATABASE_URL: postgresql://user:password@auth-db:5432/auth_db
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      startup:
+        path: /health
+        periodSeconds: 5
+        failureThreshold: 24
+      readiness:
+        path: /ready
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+    ingress:
+      host: auth-service.local
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+    database:
+      enabled: true
+      name: auth-db
+      image: postgres:16
+      port: 5432
+      initDatabase: auth_db
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
+
+  userProfileService:
+    name: user-profile-service
+    image:
+      repository: user-profile-service
+      tag: latest
+      pullPolicy: IfNotPresent
+    command:
+      - node
+      - src/index.js
+    replicaCount: 2
+    containerPort: 3004
+    service:
+      type: ClusterIP
+      port: 3004
+    config:
+      PORT: "3004"
+    secret:
+      DATABASE_URL: postgresql://user:password@user-profile-db:5432/user_profile_db
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      startup:
+        path: /health
+        periodSeconds: 5
+        failureThreshold: 24
+      readiness:
+        path: /ready
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+    ingress:
+      host: user-profile-service.local
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+    database:
+      enabled: true
+      name: user-profile-db
+      image: postgres:16
+      port: 5432
+      initDatabase: user_profile_db
       resources:
         requests:
           cpu: 100m
