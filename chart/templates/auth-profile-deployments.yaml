@@ -55,7 +55,7 @@ spec:
                   name: {{ $service.name }}-secret
                   key: JWT_SECRET
           resources:
-{{ toYaml $service.resources | indent 12 }}
+            {{- toYaml $service.resources | nindent 12 }}
           startupProbe:
             httpGet:
               path: {{ $service.probes.startup.path }}
@@ -68,14 +68,14 @@ spec:
               port: {{ $service.containerPort }}
             initialDelaySeconds: {{ $service.probes.liveness.initialDelaySeconds }}
             periodSeconds: {{ $service.probes.liveness.periodSeconds }}
-            timeoutSeconds: {{ $service.probes.liveness.timeoutSeconds }}
+            timeoutSeconds: {{ default 5 $service.probes.liveness.timeoutSeconds }}
           readinessProbe:
             httpGet:
               path: {{ $service.probes.readiness.path }}
               port: {{ $service.containerPort }}
             initialDelaySeconds: {{ $service.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ $service.probes.readiness.periodSeconds }}
-            timeoutSeconds: {{ $service.probes.readiness.timeoutSeconds }}
+            timeoutSeconds: {{ default 5 $service.probes.readiness.timeoutSeconds }}
 ---
 apiVersion: v1
 kind: Service
@@ -156,7 +156,7 @@ spec:
             - name: initdb
               mountPath: /docker-entrypoint-initdb.d
           resources:
-{{ toYaml $service.database.resources | indent 12 }}
+            {{- toYaml $service.database.resources | nindent 12 }}
       volumes:
         - name: initdb
           configMap:
@@ -183,6 +183,6 @@ metadata:
   namespace: {{ include "cse474.namespace" $root }}
 data:
   init.sql: |-
-{{ .Files.Get $service.database.initSQL | indent 4 }}
+{{ $root.Files.Get $service.database.initSQL | indent 4 }}
 {{- end }}
 {{- end }}
