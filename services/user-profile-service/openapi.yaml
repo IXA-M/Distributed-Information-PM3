@@ -1,0 +1,128 @@
+
+openapi: 3.0.0
+info:
+  title: User Profile Service API
+  version: 1.0.0
+  description: API for managing user profiles.
+servers:
+  - url: /
+paths:
+  /profiles/{id}:
+    get:
+      summary: Get user profile by ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+          required: true
+          description: Numeric ID of the user to retrieve
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      phone:
+                        type: string
+                        example: "+15551234567"
+                      city:
+                        type: string
+                        example: "New York"
+                      bio:
+                        type: string
+                        example: "Software engineer with a passion for open source."
+                  meta:
+                    type: object
+                    properties:
+                      service:
+                        type: string
+                        example: "user-profile-service"
+                      request_id:
+                        type: string
+                        example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        '403':
+          description: Forbidden - User can only view their own profile
+        '404':
+          description: Profile not found
+        '500':
+          description: Internal server error
+    put:
+      summary: Update user profile by ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+          required: true
+          description: Numeric ID of the user to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  example: "+15551234567"
+                city:
+                  type: string
+                  example: "New York"
+                bio:
+                  type: string
+                  example: "Software engineer with a passion for open source."
+      responses:
+        '200':
+          description: User profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      phone:
+                        type: string
+                        example: "+15551234567"
+                      city:
+                        type: string
+                        example: "New York"
+                      bio:
+                        type: string
+                        example: "Software engineer with a passion for open source."
+                  meta:
+                    type: object
+                    properties:
+                      service:
+                        type: string
+                        example: "user-profile-service"
+                      request_id:
+                        type: string
+                        example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        '403':
+          description: Forbidden - User can only update their own profile
+        '422':
+          description: Validation error
+        '500':
+          description: Internal server error
