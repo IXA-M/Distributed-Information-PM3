@@ -104,6 +104,8 @@ jobs:
           sleep 60
       - name: Run unit and integration tests with coverage
         run: npm run test:coverage
+        env:
+          KAFKAJS_NO_PARTITIONER_WARNING: 1
       - name: Stop integration test infrastructure
         if: always()
         run: sudo docker compose -f docker-compose.integration-tests.yml down
