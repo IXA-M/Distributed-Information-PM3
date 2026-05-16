@@ -170,7 +170,7 @@ jobs:
     needs:
       - prepare
       - docker-build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/fix/ci-cd-integration-tests'
     permissions:
       contents: read
       packages: write
@@ -212,7 +212,7 @@ jobs:
     needs:
       - prepare
       - push
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/fix/ci-cd-integration-tests'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
