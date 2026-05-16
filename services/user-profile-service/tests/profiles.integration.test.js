@@ -20,9 +20,13 @@ describe("User Profile Service Integration Tests", () => {
   beforeAll(async () => {
     // Ensure the database is clean before running tests
     await pool.query("DELETE FROM profiles");
+    const { connectKafka } = require("../src/kafka/index");
+    await connectKafka();
   });
 
   afterAll(async () => {
+    const { disconnectKafka } = require("../src/kafka/index");
+    await disconnectKafka();
     await pool.end();
   });
 

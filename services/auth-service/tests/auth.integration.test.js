@@ -17,9 +17,13 @@ describe("Auth Service Integration Tests", () => {
     // Ensure the database is clean before running tests
     await pool.query("DELETE FROM refresh_tokens");
     await pool.query("DELETE FROM users");
+    const { connectKafka } = require("../src/kafka/producer");
+    await connectKafka();
   });
 
   afterAll(async () => {
+    const { disconnectKafka } = require("../src/kafka/producer");
+    await disconnectKafka();
     await pool.end();
   });
 
