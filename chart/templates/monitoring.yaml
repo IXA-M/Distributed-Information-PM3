@@ -25,6 +25,22 @@ data:
         metrics_path: /metrics
         static_configs:
           - targets: ["{{ .Values.services.replicationPlanner.name }}:{{ .Values.services.replicationPlanner.service.port }}"]
+      - job_name: auth-service
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["{{ .Values.services.authService.name }}:{{ .Values.services.authService.service.port }}"]
+      - job_name: user-profile-service
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["{{ .Values.services.userProfileService.name }}:{{ .Values.services.userProfileService.service.port }}"]
+      - job_name: secrets-broker
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["{{ .Values.services.secretsBroker.name }}:{{ .Values.services.secretsBroker.service.port }}"]
+      - job_name: chaos-simulator
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["{{ .Values.services.chaosSimulator.name }}:{{ .Values.services.chaosSimulator.service.port }}"]
       - job_name: prometheus
         static_configs:
           - targets: ["localhost:9090"]

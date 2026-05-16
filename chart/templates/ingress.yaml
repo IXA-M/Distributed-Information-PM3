@@ -64,6 +64,20 @@ spec:
                 name: {{ .Values.services.userProfileService.name }}
                 port:
                   number: {{ .Values.services.userProfileService.service.port }}
+          - path: /secrets
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.secretsBroker.name }}
+                port:
+                  number: {{ .Values.services.secretsBroker.service.port }}
+          - path: /chaos
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.chaosSimulator.name }}
+                port:
+                  number: {{ .Values.services.chaosSimulator.service.port }}
           {{- if .Values.monitoring.enabled }}
           - path: /prometheus
             pathType: Prefix

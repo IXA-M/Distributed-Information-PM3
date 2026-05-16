@@ -1,35 +1,82 @@
 # Distributed Information PM3
 
-PM3 submission for a distributed information system built from four Node.js microservices:
-
-- `chunk-catalog`: stores chunk metadata for uploaded files.
-- `chunk-location`: stores replica locations for chunks.
-- `storage-gateway`: accepts chunk/object uploads, stores object bytes, publishes chunk events, and exposes object retrieval APIs.
-- `replication-planner`: consumes or receives chunk events and creates replication tasks according to the configured policy.
-
-The repository includes service code, Dockerfiles, raw Kubernetes manifests, one combined Helm chart, monitoring, tracing, automated tests, coverage reports, and a GitHub Actions CI/CD workflow.
+PM3 submission for a distributed information system built from Node.js microservices and deployed through one shared repository, one CI/CD workflow, and one combined Helm chart.
 
 ## Repository Structure
 
 ```text
-.github/workflows/        GitHub Actions CI/CD pipeline
-chart/                    Single Helm chart for the full system
+.github/workflows/        GitHub Actions CI/CD pipelines
+chart/                    Single Helm chart for the deployable system
 docs/                     API and deployment documentation
 k8s/                      Raw Kubernetes manifests
+legacy_configs/           Older compose/config assets kept for reference
 n8n/workflows/            n8n workflow exports
 observability/            Prometheus, Grafana, Loki, Promtail assets
 report/                   Report notes and evidence placeholders
 scripts/                  Local lint and coverage helpers
-services/
-  chunk-catalog/
-  chunk-location/
-  replication-planner/
-  storage-gateway/
-shared/                   Shared helpers used by storage-gateway and replication-planner
+services/                 Microservice source code
+shared/                   Shared helpers for metrics, docs, tracing, and events
 tests/coverage/           Committed coverage summaries
 ```
 
 ## Services
+
+The deployable services currently covered by the chart and CI are:
+
+- `chunk-catalog`: stores chunk metadata for uploaded files.
+- `chunk-location`: stores replica locations for chunks.
+- `storage-gateway`: accepts chunk/object uploads, stores object bytes, publishes chunk events, and exposes retrieval APIs.
+- `replication-planner`: consumes or receives chunk events and creates replication tasks according to the configured policy.
+- `auth-service`: handles registration, login, JWT refresh, and user registration events.
+- `user-profile-service`: stores and updates user profile records after authentication.
+- `secrets-broker`: issues short-lived service secrets and stores only hashes.
+- `chaos-simulator`: stores latency/error-rate chaos rules and publishes activation events to Kafka.
+
+Additional service folders may exist for teammate work in progress, but the final evaluated state is the merged `main` branch.
+
+## One Command
+
+For local verification, install once and run the full test/coverage flow:
+
+```powershell
+npm install
+npm run coverage
+```
+
+For Kubernetes, deploy the full chart with:
+
+```powershell
+helm upgrade --install cse474 ./chart --namespace cse474-prod --create-namespace
+```
+
+## Local Development
+
+Run static analysis:
+
+```powershell
+npm run lint
+```
+
+Run all tests:
+
+```powershell
+npm test
+```
+
+Run only Walid's two services:
+
+```powershell
+npm test --workspace=secrets-broker
+npm test --workspace=chaos-simulator
+```
+
+Generate coverage summaries:
+
+```powershell
+npm run test:coverage
+```
+
+## API Summary
 
 ### Chunk Catalog
 
@@ -64,39 +111,63 @@ tests/coverage/           Committed coverage summaries
 - `GET /docs`
 - `POST /replication/plan`
 
-## Local Development
+### Auth Service
 
-Install dependencies:
+- `GET /health`
+- `GET /ready`
+- `GET /metrics`
+- `GET /docs`
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/refresh`
 
-```powershell
-npm install
+Example register request:
+
+```json
+{ "name": "Ali", "email": "ali@example.com", "password": "Strong123" }
 ```
 
-Run static analysis:
+### User Profile Service
 
-```powershell
-npm run lint
-```
+All profile endpoints require `Authorization: Bearer <jwt>`.
 
-Run all tests:
+- `GET /health`
+- `GET /ready`
+- `GET /metrics`
+- `GET /docs`
+- `GET /profiles/:id`
+- `PUT /profiles/:id`
 
-```powershell
-npm test
-```
+### Secrets Broker
 
-Generate coverage:
+- `GET /health`
+- `GET /ready`
+- `GET /metrics`
+- `GET /docs`
+- `GET /docs/openapi.json`
+- `POST /secrets/issue`
 
-```powershell
-npm run coverage
-```
+### Chaos Simulator
+
+- `GET /health`
+- `GET /ready`
+- `GET /metrics`
+- `GET /docs`
+- `GET /docs/openapi.json`
+- `POST /chaos/latency`
+- `POST /chaos/error-rate`
+
+## Kafka Topics
+
+| Topic | Producer | Consumers |
+|---|---|---|
+| `user.registered` | Auth Service | User Profile Service, Roles Service |
+| `profile.updated` | User Profile Service | Audit Log, Access Analytics |
+| `chaos.rule.activated` | Chaos Simulator | Platform services that react to chaos rules |
+| `upload.completed` | Storage Gateway | Replication Planner |
+| `replication.task.created` | Replication Planner | Storage worker services |
 
 ## Kubernetes And Helm
-
-Deploy the full system with the combined chart:
-
-```powershell
-helm upgrade --install cse474 ./chart --namespace cse474-prod --create-namespace
-```
 
 Check status:
 
@@ -108,9 +179,9 @@ kubectl get ingress -n cse474-prod
 
 The chart deploys:
 
-- All four microservices
-- MongoDB for shared services
-- Per-service MongoDB for chunk-catalog and chunk-location
+- Core microservices
+- PostgreSQL databases for auth and user-profile
+- MongoDB for shared services and per-service MongoDB where required
 - Kafka
 - Prometheus
 - Grafana
@@ -118,6 +189,20 @@ The chart deploys:
 - Jaeger
 - Ingress
 - HPAs for microservices
+
+Ingress paths under `distributed-information.local`:
+
+```text
+/storage
+/planner
+/auth
+/profiles
+/secrets
+/chaos
+/prometheus
+/grafana
+/jaeger
+```
 
 ## Observability
 
@@ -146,17 +231,22 @@ Expected Jaeger services:
 ```text
 storage-gateway
 replication-planner
+auth-service
+user-profile-service
+secrets-broker
+chaos-simulator
 ```
 
 ## CI/CD
 
-Workflow file:
+Workflow files:
 
 ```text
 .github/workflows/ci-cd.yml
+.github/workflows/auth-profile-ci-cd.yml
 ```
 
-The pipeline runs on pull requests and pushes to `main`. It performs linting, dependency installation, tests with coverage, Docker image builds, image pushes, and Helm deployment.
+The pipelines run on pull requests and pushes to `main`. They perform dependency installation, linting, tests with coverage, Docker image builds, image pushes, Helm validation, and deployment where a reachable `KUBE_CONFIG` is provided.
 
 If `KUBE_CONFIG` points to a local-only cluster such as Minikube or Docker Desktop Kubernetes, GitHub Actions validates the Helm manifests with `helm template` instead of trying to deploy to a cluster it cannot reach.
 
@@ -173,43 +263,9 @@ Optional GitHub Actions secrets:
 DOCKERHUB_USERNAME
 ```
 
-Image registries:
+Walid service images:
 
 ```text
-chunk-catalog and chunk-location: GHCR
-storage-gateway and replication-planner: DockerHub docker.io/ahmedxdarwish
+ghcr.io/ixa-m/distributed-information-pm3/secrets-broker
+ghcr.io/ixa-m/distributed-information-pm3/chaos-simulator
 ```
-
----
-## Integrated Services: Auth and User Profile
-The following sections describe the newly integrated **Auth Service** and **User Profile Service**.
-
-### Running with Docker (Recommended)
-```bash
-# 1. Navigate to project root
-cd repo
-# 2. Copy env file (optional – defaults are set in docker-compose.yml)
-cp services/auth-service/.env.example services/auth-service/.env
-cp services/user-profile-service/.env.example services/user-profile-service/.env
-# 3. Build and start all services
-docker compose up --build -d
-```
-
-### Auth Service — `http://localhost:3001`
-#### `POST /auth/register`
-Register a new user.
-```json
-// Request
-{ "name": "Ali", "email": "ali@example.com", "password": "Strong123" }
-```
-
-### User Profile Service — `http://localhost:3002`
-All endpoints require `Authorization: Bearer <jwt>` header.
-#### `GET /profiles/:id`
-Get a user's profile. Users can only fetch their own profile.
-
-### Kafka Topics
-| Topic | Producer | Consumers |
-|---|---|---|
-| `user.registered` | Auth Service | User Profile Service, Roles Service |
-| `profile.updated` | User Profile Service | Audit Log, Access Analytics |

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: secrets-broker-config
+  namespace: cse474-prod
+data:
+  NODE_ENV: production
+  PORT: "3001"
+  SERVICE_NAME: secrets-broker
+  MONGO_URI: mongodb://secrets-broker-db:27017
+  DB_NAME: secrets_broker_db
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+  OTEL_TRACES_EXPORTER: otlp

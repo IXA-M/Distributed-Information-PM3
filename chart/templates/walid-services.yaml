@@ -1,0 +1,169 @@
+{{- $services := list .Values.services.secretsBroker .Values.services.chaosSimulator -}}
+{{- range $svc := $services }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $svc.name }}-config
+  namespace: {{ include "cse474.namespace" $ }}
+  labels:
+    app.kubernetes.io/name: {{ $svc.name }}
+    {{- include "cse474.labels" $ | nindent 4 }}
+data:
+  {{- range $key, $value := $svc.config }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $svc.name }}-secret
+  namespace: {{ include "cse474.namespace" $ }}
+  labels:
+    app.kubernetes.io/name: {{ $svc.name }}
+    {{- include "cse474.labels" $ | nindent 4 }}
+type: Opaque
+stringData:
+  {{- range $key, $value := $svc.secret }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ include "cse474.namespace" $ }}
+  labels:
+    app.kubernetes.io/name: {{ $svc.name }}
+    {{- include "cse474.labels" $ | nindent 4 }}
+spec:
+  replicas: {{ $svc.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ $svc.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $svc.name }}
+        app.kubernetes.io/name: {{ $svc.name }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: {{ $svc.containerPort | quote }}
+    spec:
+      containers:
+        - name: {{ $svc.name }}
+          image: "{{ $svc.image.repository }}:{{ $svc.image.tag }}"
+          imagePullPolicy: {{ $svc.image.pullPolicy }}
+          ports:
+            - containerPort: {{ $svc.containerPort }}
+          envFrom:
+            - configMapRef:
+                name: {{ $svc.name }}-config
+            - secretRef:
+                name: {{ $svc.name }}-secret
+          resources:
+            {{- toYaml $svc.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: {{ $svc.probes.readiness.path }}
+              port: {{ $svc.containerPort }}
+            initialDelaySeconds: {{ $svc.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ $svc.probes.readiness.periodSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ $svc.probes.liveness.path }}
+              port: {{ $svc.containerPort }}
+            initialDelaySeconds: {{ $svc.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ $svc.probes.liveness.periodSeconds }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ include "cse474.namespace" $ }}
+  labels:
+    app.kubernetes.io/name: {{ $svc.name }}
+    {{- include "cse474.labels" $ | nindent 4 }}
+spec:
+  type: {{ $svc.service.type }}
+  selector:
+    app: {{ $svc.name }}
+  ports:
+    - name: http
+      port: {{ $svc.service.port }}
+      targetPort: {{ $svc.containerPort }}
+{{- if $svc.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ include "cse474.namespace" $ }}
+  labels:
+    app.kubernetes.io/name: {{ $svc.name }}
+    {{- include "cse474.labels" $ | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $svc.name }}
+  minReplicas: {{ $svc.autoscaling.minReplicas }}
+  maxReplicas: {{ $svc.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $svc.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}
+{{- if $svc.database.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $svc.database.name }}
+  namespace: {{ include "cse474.namespace" $ }}
+  labels:
+    app.kubernetes.io/name: {{ $svc.database.name }}
+    {{- include "cse474.labels" $ | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $svc.database.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $svc.database.name }}
+        app.kubernetes.io/name: {{ $svc.database.name }}
+    spec:
+      containers:
+        - name: mongo
+          image: {{ $svc.database.image }}
+          ports:
+            - containerPort: {{ $svc.database.port }}
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: {{ $svc.database.initDatabase | quote }}
+          resources:
+            {{- toYaml $svc.database.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $svc.database.name }}
+  namespace: {{ include "cse474.namespace" $ }}
+  labels:
+    app.kubernetes.io/name: {{ $svc.database.name }}
+    {{- include "cse474.labels" $ | nindent 4 }}
+spec:
+  selector:
+    app: {{ $svc.database.name }}
+  ports:
+    - name: mongo
+      port: {{ $svc.database.port }}
+      targetPort: {{ $svc.database.port }}
+{{- end }}
+{{- end }}

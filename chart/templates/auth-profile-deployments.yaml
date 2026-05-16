@@ -184,5 +184,6 @@ metadata:
 data:
   init.sql: |-
 {{ $root.Files.Get $service.database.initSQL | indent 4 }}
+---
 {{- end }}
 {{- end }}

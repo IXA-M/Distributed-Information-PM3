@@ -44,6 +44,20 @@ spec:
                 name: replication-planner
                 port:
                   number: 80
+          - path: /secrets
+            pathType: Prefix
+            backend:
+              service:
+                name: secrets-broker
+                port:
+                  number: 3001
+          - path: /chaos
+            pathType: Prefix
+            backend:
+              service:
+                name: chaos-simulator
+                port:
+                  number: 3002
           - path: /prometheus
             pathType: Prefix
             backend:

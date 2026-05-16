@@ -1,0 +1,6 @@
+service=chaos-simulator
+statements=91.45%
+branches=71.43%
+functions=90.00%
+lines=91.45%
+framework=Jest + Supertest

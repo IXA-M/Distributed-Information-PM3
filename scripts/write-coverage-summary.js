@@ -1,7 +1,16 @@
 const fs = require("fs");
 const path = require("path");
 
-const services = ["chunk-catalog", "chunk-location", "replication-planner", "storage-gateway", "auth-service", "user-profile-service"];
+const services = [
+  "auth-service",
+  "chaos-simulator",
+  "chunk-catalog",
+  "chunk-location",
+  "replication-planner",
+  "secrets-broker",
+  "storage-gateway",
+  "user-profile-service"
+];
 const outputRoot = path.join(process.cwd(), "tests", "coverage");
 
 if (!fs.existsSync(outputRoot)) {
@@ -10,7 +19,10 @@ if (!fs.existsSync(outputRoot)) {
 
 for (const service of services) {
   const serviceCoverageDir = path.join(process.cwd(), "services", service, "tests", "coverage");
-  const coveragePath = path.join(serviceCoverageDir, "coverage-final.json");
+  const fallbackCoverageDir = path.join(process.cwd(), "services", service, "coverage");
+  const coveragePath = fs.existsSync(path.join(serviceCoverageDir, "coverage-final.json"))
+    ? path.join(serviceCoverageDir, "coverage-final.json")
+    : path.join(fallbackCoverageDir, "coverage-final.json");
 
   if (!fs.existsSync(coveragePath)) {
     console.log(`No coverage found for ${service} at ${coveragePath}`);
