@@ -98,6 +98,10 @@ jobs:
 
       - name: Start integration test infrastructure
         run: sudo docker compose -f docker-compose.integration-tests.yml up -d
+      - name: Wait for infrastructure
+        run: |
+          echo "Waiting for DBs and Kafka..."
+          sleep 30
       - name: Run unit and integration tests with coverage
         run: npm run test:coverage
       - name: Stop integration test infrastructure
