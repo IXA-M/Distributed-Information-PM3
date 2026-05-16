@@ -3,6 +3,11 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const { createServer } = require("../src/start");
 
+jest.mock("../../../shared/authenticate", () => (req, res, next) => {
+  req.userId = "test-user";
+  next();
+});
+
 describe("chunk-catalog integration", () => {
   let mongoServer;
   let runtime;
