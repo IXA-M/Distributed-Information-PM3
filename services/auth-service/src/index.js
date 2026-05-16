@@ -8,7 +8,7 @@ const logger = require('./config/logger');
 const db = require('./config/database');
 const { connectKafka, disconnectKafka } = require('./kafka/producer');
 const authRoutes = require('./routes/auth');
-const { createMetrics } = require('../../../shared/observability');
+const { createMetrics, createDocsHandler, createOpenApiHandler } = require("../../../shared/observability");
 
 const app = express();
 const metrics = createMetrics('auth-service');
@@ -20,7 +20,10 @@ app.use(metrics.middleware);
 app.use((req, _res, next) => { req.requestId = uuidv4(); next(); });
 
 // ── Health probes ──────────────────────────────────────────────────────────────
-app.get('/metrics', metrics.handler);
+app.get("/metrics", metrics.handler);
+app.get("/docs", createDocsHandler({ openApiPath: "./openapi.yaml", title: "Auth Service API Docs" }));
+app.get("/api-docs", createDocsHandler({ openApiPath: "./openapi.yaml", title: "Auth Service API Docs" }));
+app.get("/openapi.yaml", createOpenApiHandler("./openapi.yaml"));
 app.get('/health', (_req, res) => {
   res.json({ success: true, data: { status: 'healthy' }, meta: { ...META, request_id: uuidv4() } });
 });
