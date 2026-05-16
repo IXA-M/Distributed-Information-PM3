@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "jest --coverage --forceExit"
+    "test": "jest --coverage --forceExit",
+    "test:coverage": "jest --coverage --forceExit"
   },
   "dependencies": {
     "dotenv": "^16.3.1",
