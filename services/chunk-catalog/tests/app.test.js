@@ -1,6 +1,10 @@
 const request = require("supertest");
 
 const { createApp } = require("../src/app");
+jest.mock("../../../shared/authenticate", () => (req, res, next) => {
+  req.userId = "test-user";
+  next();
+});
 
 function createRepository() {
   const chunks = [];

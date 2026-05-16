@@ -1,5 +1,9 @@
 const request = require("supertest");
 const { createReplicationPlannerApp } = require("../src/app");
+jest.mock("../../../../shared/authenticate", () => (req, res, next) => {
+  req.userId = "test-user";
+  next();
+});
 
 describe("replication-planner HTTP integration tests", () => {
   let database;

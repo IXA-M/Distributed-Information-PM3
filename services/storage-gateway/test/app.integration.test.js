@@ -3,6 +3,10 @@ const os = require("os");
 const path = require("path");
 const request = require("supertest");
 const { createStorageGatewayApp } = require("../src/app");
+jest.mock("../../../../shared/authenticate", () => (req, res, next) => {
+  req.userId = "test-user";
+  next();
+});
 
 describe("storage-gateway HTTP integration tests", () => {
   let database;
