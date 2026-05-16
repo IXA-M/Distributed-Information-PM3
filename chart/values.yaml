@@ -179,6 +179,40 @@ services:
         cpu: 500m
         memory: 512Mi
 
+  authService:
+    name: auth-service
+    image: auth-service
+    tag: latest
+    replicas: 2
+    port: 3001
+    service:
+      type: ClusterIP
+      port: 80
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  userProfileService:
+    name: user-profile-service
+    image: user-profile-service
+    tag: latest
+    replicas: 2
+    port: 3002
+    service:
+      type: ClusterIP
+      port: 80
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
 dependencies:
   mongodb:
     enabled: true
