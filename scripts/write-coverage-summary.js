@@ -4,38 +4,43 @@ const path = require("path");
 const services = ["chunk-catalog", "chunk-location", "replication-planner", "storage-gateway"];
 const outputRoot = path.join(process.cwd(), "tests", "coverage");
 
-fs.mkdirSync(outputRoot, { recursive: true });
+if (!fs.existsSync(outputRoot)) {
+  fs.mkdirSync(outputRoot, { recursive: true });
+}
 
 for (const service of services) {
-  const coveragePath = path.join(
-    process.cwd(),
-    "services",
-    service,
-    "tests",
-    "coverage",
-    "coverage-final.json"
-  );
+  const serviceCoverageDir = path.join(process.cwd(), "services", service, "tests", "coverage");
+  const coveragePath = path.join(serviceCoverageDir, "coverage-final.json");
+
   if (!fs.existsSync(coveragePath)) {
+    console.log(`No coverage found for ${service} at ${coveragePath}`);
     continue;
   }
 
-  const coverage = JSON.parse(fs.readFileSync(coveragePath, "utf8"));
-  const summary = summarize(coverage);
-  const content = [
-    `service=${service}`,
-    `statements=${summary.statements.toFixed(2)}%`,
-    `branches=${summary.branches.toFixed(2)}%`,
-    `functions=${summary.functions.toFixed(2)}%`,
-    `lines=${summary.lines.toFixed(2)}%`,
-    "framework=Jest + Supertest",
-    ""
-  ].join("\n");
+  try {
+    const coverage = JSON.parse(fs.readFileSync(coveragePath, "utf8"));
+    const summary = summarize(coverage);
 
-  fs.writeFileSync(path.join(outputRoot, `${service}-coverage-summary.txt`), content);
-  fs.writeFileSync(
-    path.join(process.cwd(), "services", service, "tests", "coverage", "coverage-summary.txt"),
-    content
-  );
+    const content = [
+      `service=${service}`,
+      `statements=${summary.statements.toFixed(2)}%`,
+      `branches=${summary.branches.toFixed(2)}%`,
+      `functions=${summary.functions.toFixed(2)}%`,
+      `lines=${summary.lines.toFixed(2)}%`,
+      "framework=Jest + Supertest",
+      ""
+    ].join("\n");
+
+    fs.writeFileSync(path.join(outputRoot, `${service}-coverage-summary.txt`), content);
+    
+    if (!fs.existsSync(serviceCoverageDir)) {
+      fs.mkdirSync(serviceCoverageDir, { recursive: true });
+    }
+    fs.writeFileSync(path.join(serviceCoverageDir, "coverage-summary.txt"), content);
+    console.log(`Generated coverage summary for ${service}`);
+  } catch (error) {
+    console.error(`Error processing coverage for ${service}:`, error.message);
+  }
 }
 
 function summarize(coverage) {
@@ -47,12 +52,20 @@ function summarize(coverage) {
   };
 
   for (const fileCoverage of Object.values(coverage)) {
-    addCounter(totals.statements, Object.values(fileCoverage.s));
-    addCounter(totals.functions, Object.values(fileCoverage.f));
-    addCounter(totals.lines, Object.entries(fileCoverage.statementMap).map(([id]) => fileCoverage.s[id]));
-
-    for (const branchHits of Object.values(fileCoverage.b)) {
-      addCounter(totals.branches, branchHits);
+    if (fileCoverage.s) addCounter(totals.statements, Object.values(fileCoverage.s));
+    if (fileCoverage.f) addCounter(totals.functions, Object.values(fileCoverage.f));
+    if (fileCoverage.statementMap && fileCoverage.s) {
+      addCounter(totals.lines, Object.entries(fileCoverage.statementMap).map(([id]) => fileCoverage.s[id]));
+    }
+    if (fileCoverage.b) {
+      for (const branchHits of Object.values(fileCoverage.b)) {
+        if (Array.isArray(branchHits)) {
+          addCounter(totals.branches, branchHits);
+        } else {
+          totals.branches.total += 1;
+          if (branchHits > 0) totals.branches.covered += 1;
+        }
+      }
     }
   }
 
