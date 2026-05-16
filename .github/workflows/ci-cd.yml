@@ -179,7 +179,7 @@ jobs:
     needs:
       - prepare
       - docker-build
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fix/ci-cd-and-helm' || github.event_name == 'pull_request'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -266,7 +266,7 @@ jobs:
     needs:
       - prepare
       - push
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fix/ci-cd-and-helm' || github.event_name == 'pull_request'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -282,6 +282,12 @@ jobs:
           KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         run: |
           mkdir -p ~/.kube
+          if [ -z "$KUBE_CONFIG" ]; then
+            echo "::warning::KUBE_CONFIG secret is not set. Validating Helm manifests instead of deploying."
+            echo "deploy_mode=mock" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           normalized_config="$(printf '%s' "$KUBE_CONFIG" | tr -d '\r\n ')"
 
           if printf '%s' "$normalized_config" | base64 -d > ~/.kube/config 2>/dev/null && grep -q '^apiVersion:' ~/.kube/config; then
@@ -314,9 +320,14 @@ jobs:
             --set services.chunkCatalog.image.tag=${{ github.sha }} \
             --set services.chunkLocation.image.repository=${{ needs.prepare.outputs.chunk_location_image }} \
             --set services.chunkLocation.image.tag=${{ github.sha }} \
-            --set imageRegistry=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE} \
-            --set services.storageGateway.tag=${{ github.sha }} \
-            --set services.replicationPlanner.tag=${{ github.sha }}
+            --set services.storageGateway.image.repository=${{ needs.prepare.outputs.storage_gateway_image }} \
+            --set services.storageGateway.image.tag=${{ github.sha }} \
+            --set services.replicationPlanner.image.repository=${{ needs.prepare.outputs.replication_planner_image }} \
+            --set services.replicationPlanner.image.tag=${{ github.sha }} \
+            --set services.authService.image.repository=${{ needs.prepare.outputs.auth_service_image }} \
+            --set services.authService.image.tag=${{ github.sha }} \
+            --set services.userProfileService.image.repository=${{ needs.prepare.outputs.user_profile_service_image }} \
+            --set services.userProfileService.image.tag=${{ github.sha }}
 
       - name: Validate Helm manifests
         if: steps.kubeconfig.outputs.deploy_mode == 'mock'
@@ -327,9 +338,14 @@ jobs:
             --set services.chunkCatalog.image.tag=${{ github.sha }} \
             --set services.chunkLocation.image.repository=${{ needs.prepare.outputs.chunk_location_image }} \
             --set services.chunkLocation.image.tag=${{ github.sha }} \
-            --set imageRegistry=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE} \
-            --set services.storageGateway.tag=${{ github.sha }} \
-            --set services.replicationPlanner.tag=${{ github.sha }} \
+            --set services.storageGateway.image.repository=${{ needs.prepare.outputs.storage_gateway_image }} \
+            --set services.storageGateway.image.tag=${{ github.sha }} \
+            --set services.replicationPlanner.image.repository=${{ needs.prepare.outputs.replication_planner_image }} \
+            --set services.replicationPlanner.image.tag=${{ github.sha }} \
+            --set services.authService.image.repository=${{ needs.prepare.outputs.auth_service_image }} \
+            --set services.authService.image.tag=${{ github.sha }} \
+            --set services.userProfileService.image.repository=${{ needs.prepare.outputs.user_profile_service_image }} \
+            --set services.userProfileService.image.tag=${{ github.sha }} \
             > rendered-manifests.yaml
 
           test -s rendered-manifests.yaml

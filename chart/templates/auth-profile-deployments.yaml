@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: {{ $service.name }}
-          image: "{{ $root.Values.imageRegistry }}/{{ $service.image.repository }}:{{ $service.image.tag }}"
+          image: "{{ $service.image.repository }}:{{ $service.image.tag }}"
           imagePullPolicy: {{ $service.image.pullPolicy }}
           command: {{ toYaml $service.command | nindent 12 }}
           ports:
@@ -183,6 +183,6 @@ metadata:
   namespace: {{ include "cse474.namespace" $root }}
 data:
   init.sql: |-
-{{ .Files.Get $service.database.initSQL | indent 4 }}
+{{ $root.Files.Get $service.database.initSQL | indent 4 }}
 {{- end }}
 {{- end }}
