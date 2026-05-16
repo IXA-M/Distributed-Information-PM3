@@ -2,23 +2,63 @@ openapi: 3.0.3
 info:
   title: Chunk Location Service
   version: 1.0.0
+  description: Tracks which storage nodes hold replicas for each chunk.
 servers:
   - url: http://localhost:3002
+    description: Local development
 paths:
+  /docs:
+    get:
+      summary: Redirect to Swagger UI
+      responses:
+        "302":
+          description: Redirects to /api-docs
+  /api-docs:
+    get:
+      summary: Swagger UI
+      responses:
+        "200":
+          description: Interactive Swagger documentation
+          content:
+            text/html:
+              schema:
+                type: string
   /health:
     get:
       summary: Liveness check
       responses:
-        '200':
+        "200":
           description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
   /ready:
     get:
       summary: Readiness check
       responses:
-        '200':
-          description: Service is ready
-        '503':
-          description: Service is not ready
+        "200":
+          description: Service is ready and can reach its database
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+        "503":
+          description: Service cannot reach its database
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        "200":
+          description: Metrics in Prometheus text format
+          content:
+            text/plain:
+              schema:
+                type: string
   /chunk-locations:
     post:
       summary: Register a replica location for a chunk
@@ -27,26 +67,37 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [chunk_id, node_id]
-              properties:
-                chunk_id:
-                  type: string
-                node_id:
-                  type: string
-                status:
-                  type: string
-                  description: Replica status on the storage node
-                  example: active
-                last_verified:
-                  type: string
-                  format: date-time
-                  description: Timestamp of the latest replica verification
+              $ref: "#/components/schemas/CreateChunkLocationRequest"
+            example:
+              chunk_id: chunk-123
+              node_id: node-a
+              status: active
+              last_verified: "2026-05-16T10:00:00.000Z"
       responses:
-        '201':
-          description: Replica location record created for the chunk and storage node
-        '409':
-          description: Replica already exists for chunk and node
+        "201":
+          description: Replica location record created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChunkLocationResponse"
+        "400":
+          description: Invalid chunk location payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Replica already exists for the chunk and node
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /chunks/{id}/replicas:
     get:
       summary: List replica nodes for a chunk
@@ -56,6 +107,188 @@ paths:
           required: true
           schema:
             type: string
+          example: chunk-123
       responses:
-        '200':
+        "200":
           description: Replica nodes returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplicaListResponse"
+        "400":
+          description: Missing or invalid chunk id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /{unknownRoute}:
+    get:
+      summary: Unknown route
+      parameters:
+        - in: path
+          name: unknownRoute
+          required: true
+          schema:
+            type: string
+      responses:
+        "404":
+          description: Route not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    CreateChunkLocationRequest:
+      type: object
+      required:
+        - chunk_id
+        - node_id
+      properties:
+        chunk_id:
+          type: string
+          minLength: 1
+        node_id:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          minLength: 1
+          default: active
+        last_verified:
+          type: string
+          format: date-time
+    ChunkLocation:
+      type: object
+      required:
+        - id
+        - chunk_id
+        - node_id
+        - status
+        - last_verified
+      properties:
+        id:
+          type: string
+        chunk_id:
+          type: string
+        node_id:
+          type: string
+        status:
+          type: string
+        last_verified:
+          type: string
+          format: date-time
+    Replica:
+      type: object
+      required:
+        - node_id
+        - status
+        - last_verified
+      properties:
+        node_id:
+          type: string
+        status:
+          type: string
+        last_verified:
+          type: string
+          format: date-time
+    ResponseMeta:
+      type: object
+      required:
+        - service
+        - request_id
+      properties:
+        service:
+          type: string
+          example: chunk-location
+        request_id:
+          type: string
+          format: uuid
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              example: ok
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ReadyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              example: ready
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ChunkLocationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: "#/components/schemas/ChunkLocation"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ReplicaListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Replica"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+        - meta
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+            - details
+          properties:
+            code:
+              type: string
+              examples:
+                - VALIDATION_ERROR
+                - CHUNK_LOCATION_ALREADY_EXISTS
+                - SERVICE_NOT_READY
+                - NOT_FOUND
+                - INTERNAL_SERVER_ERROR
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"

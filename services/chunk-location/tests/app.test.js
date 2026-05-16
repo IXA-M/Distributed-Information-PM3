@@ -1,4 +1,6 @@
 const request = require("supertest");
+const path = require("path");
+const YAML = require("yamljs");
 
 const { createApp } = require("../src/app");
 
@@ -166,6 +168,46 @@ describe("chunk-location app", () => {
     expect(response.statusCode).toBe(200);
     expect(response.text).toContain("http_requests_total");
     expect(response.text).toContain("http_request_duration_seconds");
+  });
+
+  test("exposes swagger ui at /api-docs and redirects /docs", async () => {
+    const app = createApp({ repository: createRepository() });
+
+    const docsResponse = await request(app).get("/docs");
+    const swaggerResponse = await request(app).get("/api-docs/");
+
+    expect(docsResponse.statusCode).toBe(302);
+    expect(docsResponse.headers.location).toBe("/api-docs");
+    expect(swaggerResponse.statusCode).toBe(200);
+    expect(swaggerResponse.text).toContain("Swagger UI");
+  });
+
+  test("documents all endpoints, schemas, and error responses in OpenAPI", () => {
+    const spec = YAML.load(path.join(__dirname, "..", "openapi.yaml"));
+
+    expect(Object.keys(spec.paths)).toEqual(
+      expect.arrayContaining([
+        "/docs",
+        "/api-docs",
+        "/health",
+        "/ready",
+        "/metrics",
+        "/chunk-locations",
+        "/chunks/{id}/replicas",
+        "/{unknownRoute}"
+      ])
+    );
+    expect(spec.paths["/chunk-locations"].post.requestBody.content["application/json"].schema.$ref).toBe(
+      "#/components/schemas/CreateChunkLocationRequest"
+    );
+    expect(Object.keys(spec.paths["/chunk-locations"].post.responses)).toEqual(
+      expect.arrayContaining(["201", "400", "409", "500"])
+    );
+    expect(Object.keys(spec.paths["/chunks/{id}/replicas"].get.responses)).toEqual(
+      expect.arrayContaining(["200", "400", "500"])
+    );
+    expect(spec.paths["/{unknownRoute}"].get.responses["404"]).toBeDefined();
+    expect(spec.components.schemas.ErrorResponse).toBeDefined();
   });
 
   test("returns standard 404 response for unknown routes", async () => {

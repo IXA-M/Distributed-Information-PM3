@@ -1,11 +1,15 @@
 const express = require("express");
 const { randomUUID } = require("crypto");
+const path = require("path");
+const swaggerUi = require("swagger-ui-express");
+const YAML = require("yamljs");
 
 const { AppError } = require("./errors");
 const { createObservability } = require("./observability");
 const { successResponse, errorResponse } = require("./response");
 
 const SERVICE_NAME = "chunk-location";
+const openApiDocument = YAML.load(path.join(__dirname, "..", "openapi.yaml"));
 
 function createApp({ repository, observability = createObservability(SERVICE_NAME) }) {
   const app = express();
@@ -26,6 +30,11 @@ function createApp({ repository, observability = createObservability(SERVICE_NAM
       path: req.path
     });
     next();
+  });
+
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+  app.get("/docs", (req, res) => {
+    res.redirect(302, "/api-docs");
   });
 
   app.get("/health", (req, res) => {

@@ -2,23 +2,63 @@ openapi: 3.0.3
 info:
   title: Chunk Catalog Service
   version: 1.0.0
+  description: Stores chunk metadata for distributed file chunks.
 servers:
   - url: http://localhost:3001
+    description: Local development
 paths:
+  /docs:
+    get:
+      summary: Redirect to Swagger UI
+      responses:
+        "302":
+          description: Redirects to /api-docs
+  /api-docs:
+    get:
+      summary: Swagger UI
+      responses:
+        "200":
+          description: Interactive Swagger documentation
+          content:
+            text/html:
+              schema:
+                type: string
   /health:
     get:
       summary: Liveness check
       responses:
-        '200':
+        "200":
           description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
   /ready:
     get:
       summary: Readiness check
       responses:
-        '200':
-          description: Service is ready
-        '503':
-          description: Service is not ready
+        "200":
+          description: Service is ready and can reach its database
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+        "503":
+          description: Service cannot reach its database
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        "200":
+          description: Metrics in Prometheus text format
+          content:
+            text/plain:
+              schema:
+                type: string
   /chunks:
     post:
       summary: Create a chunk record
@@ -27,22 +67,37 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [file_id, chunk_no, hash, size]
-              properties:
-                file_id:
-                  type: string
-                chunk_no:
-                  type: integer
-                hash:
-                  type: string
-                size:
-                  type: integer
+              $ref: "#/components/schemas/CreateChunkRequest"
+            example:
+              file_id: file-123
+              chunk_no: 0
+              hash: sha256:abc123
+              size: 512
       responses:
-        '201':
+        "201":
           description: Chunk created
-        '409':
-          description: Chunk already exists for file and chunk number
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChunkResponse"
+        "400":
+          description: Invalid chunk payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Chunk already exists for the file and chunk number
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     get:
       summary: List chunks by file id
       parameters:
@@ -51,6 +106,178 @@ paths:
           required: true
           schema:
             type: string
+          example: file-123
       responses:
-        '200':
+        "200":
           description: Chunks returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChunkListResponse"
+        "400":
+          description: Missing or invalid file_id query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /{unknownRoute}:
+    get:
+      summary: Unknown route
+      parameters:
+        - in: path
+          name: unknownRoute
+          required: true
+          schema:
+            type: string
+      responses:
+        "404":
+          description: Route not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    CreateChunkRequest:
+      type: object
+      required:
+        - file_id
+        - chunk_no
+        - hash
+        - size
+      properties:
+        file_id:
+          type: string
+          minLength: 1
+        chunk_no:
+          type: integer
+          minimum: 0
+        hash:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 0
+    Chunk:
+      type: object
+      required:
+        - id
+        - file_id
+        - chunk_no
+        - hash
+        - size
+        - created_at
+      properties:
+        id:
+          type: string
+        file_id:
+          type: string
+        chunk_no:
+          type: integer
+        hash:
+          type: string
+        size:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    ResponseMeta:
+      type: object
+      required:
+        - service
+        - request_id
+      properties:
+        service:
+          type: string
+          example: chunk-catalog
+        request_id:
+          type: string
+          format: uuid
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              example: ok
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ReadyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              example: ready
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ChunkResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: "#/components/schemas/Chunk"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ChunkListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Chunk"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+        - meta
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+            - details
+          properties:
+            code:
+              type: string
+              examples:
+                - VALIDATION_ERROR
+                - CHUNK_ALREADY_EXISTS
+                - SERVICE_NOT_READY
+                - NOT_FOUND
+                - INTERNAL_SERVER_ERROR
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
