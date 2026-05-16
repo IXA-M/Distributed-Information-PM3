@@ -5,15 +5,19 @@ const logger = require('./config/logger');
 const db = require('./config/database');
 const { connectKafka, disconnectKafka } = require('./kafka/producer');
 const authRoutes = require('./routes/auth');
+const { createMetrics } = require('../../shared/observability');
 
 const app = express();
+const metrics = createMetrics('auth-service');
 const PORT = process.env.PORT || 3001;
 const META = { service: 'auth-service' };
 
 app.use(express.json());
+app.use(metrics.middleware);
 app.use((req, _res, next) => { req.requestId = uuidv4(); next(); });
 
 // ── Health probes ──────────────────────────────────────────────────────────────
+app.get('/metrics', metrics.handler);
 app.get('/health', (_req, res) => {
   res.json({ success: true, data: { status: 'healthy' }, meta: { ...META, request_id: uuidv4() } });
 });
