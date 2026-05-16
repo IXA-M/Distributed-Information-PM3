@@ -147,8 +147,10 @@ services:
 
   storageGateway:
     name: storage-gateway
-    image: storage-gateway
-    tag: latest
+    image:
+      repository: storage-gateway
+      tag: latest
+      pullPolicy: IfNotPresent
     replicas: 2
     port: 3000
     service:
@@ -164,8 +166,10 @@ services:
 
   replicationPlanner:
     name: replication-planner
-    image: replication-planner
-    tag: latest
+    image:
+      repository: replication-planner
+      tag: latest
+      pullPolicy: IfNotPresent
     replicas: 2
     port: 3000
     service:
@@ -178,62 +182,6 @@ services:
       limits:
         cpu: 500m
         memory: 512Mi
-
-  authService:
-    name: auth-service
-    image: auth-service
-    tag: latest
-    replicas: 2
-    port: 3001
-    service:
-      type: ClusterIP
-      port: 80
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-
-  userProfileService:
-    name: user-profile-service
-    image: user-profile-service
-    tag: latest
-    replicas: 2
-    port: 3002
-    service:
-      type: ClusterIP
-      port: 80
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-
-dependencies:
-  mongodb:
-    enabled: true
-    image: mongo:7
-  kafka:
-    enabled: true
-    image: apache/kafka:3.7.0
-
-monitoring:
-  enabled: true
-  prometheus:
-    image: prom/prometheus:v2.54.1
-    scrapeInterval: 15s
-  grafana:
-    image: grafana/grafana:11.2.0
-    adminUser: admin
-    adminPassword: admin
-  jaeger:
-    image: jaegertracing/all-in-one:1.60
-  loki:
-    image: grafana/loki:3.1.1
 
   authService:
     name: auth-service
@@ -293,7 +241,7 @@ monitoring:
       image: postgres:16
       port: 5432
       initDatabase: auth_db
-      initSQL: "/app/src/config/init.sql"
+      initSQL: "services/auth-service/src/config/init.sql"
       resources:
         requests:
           cpu: 100m
@@ -360,7 +308,7 @@ monitoring:
       image: postgres:16
       port: 5432
       initDatabase: profile_db
-      initSQL: "/app/src/config/init.sql"
+      initSQL: "services/user-profile-service/src/config/init.sql"
       resources:
         requests:
           cpu: 100m
@@ -368,3 +316,25 @@ monitoring:
         limits:
           cpu: 250m
           memory: 256Mi
+
+dependencies:
+  mongodb:
+    enabled: true
+    image: mongo:7
+  kafka:
+    enabled: true
+    image: apache/kafka:3.7.0
+
+monitoring:
+  enabled: true
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    scrapeInterval: 15s
+  grafana:
+    image: grafana/grafana:11.2.0
+    adminUser: admin
+    adminPassword: admin
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+  loki:
+    image: grafana/loki:3.1.1

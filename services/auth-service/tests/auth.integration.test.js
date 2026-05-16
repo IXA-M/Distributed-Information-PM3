@@ -1,8 +1,3 @@
-const request = require("supertest");
-const app = require("../src/index");
-const pool = require("../src/config/database");
-const bcrypt = require("bcryptjs");
-
 // Set required env vars for tests
 process.env.JWT_SECRET = "test_integration_secret";
 process.env.PORT = "3097"; // Use a different port for integration tests
@@ -12,6 +7,11 @@ process.env.DB_NAME = "auth_db";
 process.env.DB_USER = "postgres";
 process.env.DB_PASSWORD = "postgres";
 process.env.KAFKA_BROKERS = "localhost:29092";
+
+const request = require("supertest");
+const app = require("../src/index");
+const pool = require("../src/config/database");
+const bcrypt = require("bcryptjs");
 
 describe("Auth Service Integration Tests", () => {
   beforeAll(async () => {
