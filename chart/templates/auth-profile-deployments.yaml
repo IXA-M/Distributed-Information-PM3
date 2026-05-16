@@ -1,0 +1,188 @@
+{{- $root := . -}}
+{{- range $service := list .Values.services.authService .Values.services.userProfileService }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $service.name }}
+  namespace: {{ include "cse474.namespace" $root }}
+  labels:
+    app.kubernetes.io/name: {{ $service.name }}
+    {{- include "cse474.labels" $root | nindent 4 }}
+spec:
+  replicas: {{ $service.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ $service.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $service.name }}
+        app.kubernetes.io/name: {{ $service.name }}
+    spec:
+      containers:
+        - name: {{ $service.name }}
+          image: "{{ $root.Values.imageRegistry }}/{{ $service.image.repository }}:{{ $service.image.tag }}"
+          imagePullPolicy: {{ $service.image.pullPolicy }}
+          command: {{ toYaml $service.command | nindent 12 }}
+          ports:
+            - containerPort: {{ $service.containerPort }}
+          envFrom:
+            - configMapRef:
+                name: distributed-information-config
+          env:
+            - name: SERVICE_NAME
+              value: {{ $service.name | quote }}
+            - name: PORT
+              value: {{ $service.config.PORT | quote }}
+            - name: KAFKA_BROKERS
+              value: {{ $service.config.KAFKA_BROKERS | quote }}
+            - name: DB_HOST
+              value: {{ $service.secret.DB_HOST | quote }}
+            - name: DB_PORT
+              value: {{ $service.secret.DB_PORT | quote }}
+            - name: DB_NAME
+              value: {{ $service.secret.DB_NAME | quote }}
+            - name: DB_USER
+              value: {{ $service.secret.DB_USER | quote }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $service.name }}-secret
+                  key: DB_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $service.name }}-secret
+                  key: JWT_SECRET
+          resources:
+{{ toYaml $service.resources | indent 12 }}
+          startupProbe:
+            httpGet:
+              path: {{ $service.probes.startup.path }}
+              port: {{ $service.containerPort }}
+            periodSeconds: {{ $service.probes.startup.periodSeconds }}
+            failureThreshold: {{ $service.probes.startup.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ $service.probes.liveness.path }}
+              port: {{ $service.containerPort }}
+            initialDelaySeconds: {{ $service.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ $service.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ $service.probes.liveness.timeoutSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ $service.probes.readiness.path }}
+              port: {{ $service.containerPort }}
+            initialDelaySeconds: {{ $service.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ $service.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ $service.probes.readiness.timeoutSeconds }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $service.name }}
+  namespace: {{ include "cse474.namespace" $root }}
+spec:
+  type: {{ $service.service.type }}
+  selector:
+    app: {{ $service.name }}
+  ports:
+    - name: http
+      port: {{ $service.service.port }}
+      targetPort: {{ $service.containerPort }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $service.name }}
+  namespace: {{ include "cse474.namespace" $root }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $service.name }}
+  minReplicas: {{ $service.autoscaling.minReplicas }}
+  maxReplicas: {{ $service.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $service.autoscaling.targetCPUUtilizationPercentage }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $service.name }}-secret
+  namespace: {{ include "cse474.namespace" $root }}
+type: Opaque
+data:
+  DB_PASSWORD: {{ $service.secret.DB_PASSWORD | b64enc | quote }}
+  JWT_SECRET: {{ $service.secret.JWT_SECRET | b64enc | quote }}
+---
+{{- if $service.database.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $service.database.name }}
+  namespace: {{ include "cse474.namespace" $root }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $service.database.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $service.database.name }}
+    spec:
+      containers:
+        - name: {{ $service.database.name }}
+          image: {{ $service.database.image }}
+          ports:
+            - containerPort: {{ $service.database.port }}
+          env:
+            - name: POSTGRES_DB
+              value: {{ $service.database.initDatabase }}
+            - name: POSTGRES_USER
+              value: {{ $service.secret.DB_USER }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $service.name }}-secret
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+          resources:
+{{ toYaml $service.database.resources | indent 12 }}
+      volumes:
+        - name: initdb
+          configMap:
+            name: {{ $service.name }}-initdb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $service.database.name }}
+  namespace: {{ include "cse474.namespace" $root }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $service.database.name }}
+  ports:
+    - name: postgres
+      port: {{ $service.database.port }}
+      targetPort: {{ $service.database.port }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $service.name }}-initdb
+  namespace: {{ include "cse474.namespace" $root }}
+data:
+  init.sql: |-
+{{ .Files.Get $service.database.initSQL | indent 4 }}
+{{- end }}
+{{- end }}
