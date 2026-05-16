@@ -101,7 +101,7 @@ jobs:
       - name: Wait for infrastructure
         run: |
           echo "Waiting for DBs and Kafka..."
-          sleep 30
+          sleep 60
       - name: Run unit and integration tests with coverage
         run: npm run test:coverage
       - name: Stop integration test infrastructure
