@@ -179,3 +179,37 @@ Image registries:
 chunk-catalog and chunk-location: GHCR
 storage-gateway and replication-planner: DockerHub docker.io/ahmedxdarwish
 ```
+
+---
+## Integrated Services: Auth and User Profile
+The following sections describe the newly integrated **Auth Service** and **User Profile Service**.
+
+### Running with Docker (Recommended)
+```bash
+# 1. Navigate to project root
+cd repo
+# 2. Copy env file (optional – defaults are set in docker-compose.yml)
+cp services/auth-service/.env.example services/auth-service/.env
+cp services/user-profile-service/.env.example services/user-profile-service/.env
+# 3. Build and start all services
+docker compose up --build -d
+```
+
+### Auth Service — `http://localhost:3001`
+#### `POST /auth/register`
+Register a new user.
+```json
+// Request
+{ "name": "Ali", "email": "ali@example.com", "password": "Strong123" }
+```
+
+### User Profile Service — `http://localhost:3002`
+All endpoints require `Authorization: Bearer <jwt>` header.
+#### `GET /profiles/:id`
+Get a user's profile. Users can only fetch their own profile.
+
+### Kafka Topics
+| Topic | Producer | Consumers |
+|---|---|---|
+| `user.registered` | Auth Service | User Profile Service, Roles Service |
+| `profile.updated` | User Profile Service | Audit Log, Access Analytics |
