@@ -183,6 +183,6 @@ metadata:
   namespace: {{ include "cse474.namespace" $root }}
 data:
   init.sql: |-
-{{ .Files.Get $service.database.initSQL | indent 4 }}
+{{ $root.Files.Get $service.database.initSQL | indent 4 }}
 {{- end }}
 {{- end }}
