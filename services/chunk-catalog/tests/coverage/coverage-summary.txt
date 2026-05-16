@@ -1,6 +1,6 @@
 service=chunk-catalog
-statements=90.12%
+statements=90.50%
 branches=68.00%
-functions=94.59%
-lines=90.12%
+functions=94.74%
+lines=90.50%
 framework=Jest + Supertest
