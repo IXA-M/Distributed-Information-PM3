@@ -58,10 +58,12 @@ services:
         path: /ready
         initialDelaySeconds: 5
         periodSeconds: 10
+        timeoutSeconds: 5
       liveness:
         path: /health
         initialDelaySeconds: 30
         periodSeconds: 15
+        timeoutSeconds: 5
     ingress:
       host: chunk-catalog.local
     autoscaling:
@@ -119,10 +121,12 @@ services:
         path: /ready
         initialDelaySeconds: 5
         periodSeconds: 10
+        timeoutSeconds: 5
       liveness:
         path: /health
         initialDelaySeconds: 30
         periodSeconds: 15
+        timeoutSeconds: 5
     ingress:
       host: chunk-location.local
     autoscaling:
@@ -223,10 +227,12 @@ services:
         path: /ready
         initialDelaySeconds: 5
         periodSeconds: 10
+        timeoutSeconds: 5
       liveness:
         path: /health
         initialDelaySeconds: 30
         periodSeconds: 15
+        timeoutSeconds: 5
     ingress:
       host: auth-service.local
     autoscaling:
@@ -290,10 +296,12 @@ services:
         path: /ready
         initialDelaySeconds: 5
         periodSeconds: 10
+        timeoutSeconds: 5
       liveness:
         path: /health
         initialDelaySeconds: 30
         periodSeconds: 15
+        timeoutSeconds: 5
     ingress:
       host: user-profile-service.local
     autoscaling:
