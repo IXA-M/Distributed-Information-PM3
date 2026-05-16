@@ -275,16 +275,16 @@ jobs:
         run: |
           helm template cse474 ./chart \
             --namespace cse474-prod \
-            --set services.authService.image.repository=${{ needs.prepare.outputs.auth_service_image }} \
-            --set services.authService.image.tag=${{ github.sha }} \
-            --set services.userProfileService.image.repository=${{ needs.prepare.outputs.user_profile_service_image }} \
-            --set services.userProfileService.image.tag=${{ github.sha }} \
-            --set services.authService.database.password=mock_password \
-            --set services.userProfileService.database.password=mock_password \
+            --set monitoring.authService.image.repository=${{ needs.prepare.outputs.auth_service_image }} \
+            --set monitoring.authService.image.tag=${{ github.sha }} \
+            --set monitoring.userProfileService.image.repository=${{ needs.prepare.outputs.user_profile_service_image }} \
+            --set monitoring.userProfileService.image.tag=${{ github.sha }} \
+            --set monitoring.authService.secret.DB_PASSWORD=mock_password \
+            --set monitoring.userProfileService.secret.DB_PASSWORD=mock_password \
             --set imageRegistry=${{ env.GHCR_REGISTRY }}/${{ needs.prepare.outputs.ghcr_namespace }} \
-            --set services.chunkCatalog.image.repository=${{ env.GHCR_REGISTRY }}/${{ needs.prepare.outputs.ghcr_namespace }}/chunk-catalog \
+            --set services.chunkCatalog.image.repository=chunk-catalog \
             --set services.chunkCatalog.image.tag=${{ github.sha }} \
-            --set services.chunkLocation.image.repository=${{ env.GHCR_REGISTRY }}/${{ needs.prepare.outputs.ghcr_namespace }}/chunk-location \
+            --set services.chunkLocation.image.repository=chunk-location \
             --set services.chunkLocation.image.tag=${{ github.sha }} \
             --set services.storageGateway.tag=${{ github.sha }} \
             --set services.replicationPlanner.tag=${{ github.sha }} \
