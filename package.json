@@ -12,7 +12,8 @@
     "test:coverage": "npm run test:coverage --workspaces --if-present && npm run coverage --workspaces --if-present && node scripts/write-coverage-summary.js",
     "start:storage-gateway": "node services/storage-gateway/src/server.js",
     "start:replication-planner": "node services/replication-planner/src/worker.js",
-    "start:pm2": "npx pm2-runtime ecosystem.config.js"
+    "start:pm2": "npx pm2-runtime ecosystem.config.js",
+    "test:integration": "sudo docker compose -f docker-compose.integration-tests.yml up --build -d && npm run test --workspaces --if-present && sudo docker compose -f docker-compose.integration-tests.yml down"
   },
   "dependencies": {
     "@opentelemetry/auto-instrumentations-node": "^0.57.0",
