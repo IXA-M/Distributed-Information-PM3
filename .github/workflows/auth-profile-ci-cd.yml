@@ -143,7 +143,7 @@ jobs:
     needs:
       - prepare
       - docker-build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fix/ci-cd-and-helm' || github.event_name == 'pull_request'
     permissions:
       contents: read
       packages: write
@@ -185,7 +185,7 @@ jobs:
     needs:
       - prepare
       - push
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fix/ci-cd-and-helm' || github.event_name == 'pull_request'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
