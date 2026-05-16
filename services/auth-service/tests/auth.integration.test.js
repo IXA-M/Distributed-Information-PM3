@@ -11,6 +11,7 @@ process.env.DB_PORT = "5432";
 process.env.DB_NAME = "auth_db";
 process.env.DB_USER = "postgres";
 process.env.DB_PASSWORD = "postgres";
+process.env.KAFKA_BROKERS = "localhost:29092";
 
 describe("Auth Service Integration Tests", () => {
   beforeAll(async () => {

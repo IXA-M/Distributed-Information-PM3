@@ -11,6 +11,7 @@ process.env.DB_PORT = "5433"; // Use the port for profile-db
 process.env.DB_NAME = "profile_db";
 process.env.DB_USER = "postgres";
 process.env.DB_PASSWORD = "postgres";
+process.env.KAFKA_BROKERS = "localhost:29092";
 
 function makeToken(userId) {
   return jwt.sign({ sub: userId }, process.env.JWT_SECRET, { expiresIn: "1h" });
