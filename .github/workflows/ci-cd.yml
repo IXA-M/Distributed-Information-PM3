@@ -96,8 +96,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Start integration test infrastructure
+        run: sudo docker compose -f docker-compose.integration-tests.yml up -d
       - name: Run unit and integration tests with coverage
         run: npm run test:coverage
+      - name: Stop integration test infrastructure
+        if: always()
+        run: sudo docker compose -f docker-compose.integration-tests.yml down
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
