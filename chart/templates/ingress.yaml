@@ -50,6 +50,20 @@ spec:
                 name: {{ .Values.services.replicationPlanner.name }}
                 port:
                   number: {{ .Values.services.replicationPlanner.service.port }}
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.authService.name }}
+                port:
+                  number: {{ .Values.services.authService.service.port }}
+          - path: /profiles
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.userProfileService.name }}
+                port:
+                  number: {{ .Values.services.userProfileService.service.port }}
           {{- if .Values.monitoring.enabled }}
           - path: /prometheus
             pathType: Prefix
