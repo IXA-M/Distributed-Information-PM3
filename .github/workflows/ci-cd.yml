@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feature/ci-cd-auth-profile
   pull_request:
     branches:
       - main
@@ -23,6 +24,8 @@ jobs:
       chunk_location_image: ${{ steps.vars.outputs.chunk_location_image }}
       storage_gateway_image: ${{ steps.vars.outputs.storage_gateway_image }}
       replication_planner_image: ${{ steps.vars.outputs.replication_planner_image }}
+      auth_service_image: ${{ steps.vars.outputs.auth_service_image }}
+      user_profile_service_image: ${{ steps.vars.outputs.user_profile_service_image }}
     steps:
       - name: Compute image names
         id: vars
@@ -34,6 +37,8 @@ jobs:
           echo "chunk_location_image=${GHCR_REGISTRY}/${ghcr_namespace}/chunk-location" >> "$GITHUB_OUTPUT"
           echo "storage_gateway_image=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/storage-gateway" >> "$GITHUB_OUTPUT"
           echo "replication_planner_image=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/replication-planner" >> "$GITHUB_OUTPUT"
+          echo "auth_service_image=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/auth-service" >> "$GITHUB_OUTPUT"
+          echo "user_profile_service_image=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/user-profile-service" >> "$GITHUB_OUTPUT"
 
   lint:
     name: Lint
@@ -91,8 +96,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Start integration test infrastructure
+        run: sudo docker compose -f docker-compose.integration-tests.yml up -d
+      - name: Wait for infrastructure
+        run: |
+          echo "Waiting for DBs and Kafka..."
+          sleep 60
       - name: Run unit and integration tests with coverage
         run: npm run test:coverage
+      - name: Stop integration test infrastructure
+        if: always()
+        run: sudo docker compose -f docker-compose.integration-tests.yml down
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
@@ -144,6 +158,20 @@ jobs:
           file: ./services/replication-planner/Dockerfile
           push: false
           tags: ${{ needs.prepare.outputs.replication_planner_image }}:${{ github.sha }}
+
+      - name: Build auth-service image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/auth-service
+          push: false
+          tags: ${{ needs.prepare.outputs.auth_service_image }}:${{ github.sha }}
+
+      - name: Build user-profile-service image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/user-profile-service
+          push: false
+          tags: ${{ needs.prepare.outputs.user_profile_service_image }}:${{ github.sha }}
 
   push:
     name: Push
@@ -213,6 +241,24 @@ jobs:
           tags: |
             ${{ needs.prepare.outputs.replication_planner_image }}:${{ github.sha }}
             ${{ needs.prepare.outputs.replication_planner_image }}:latest
+
+      - name: Build and push auth-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/auth-service
+          push: true
+          tags: |
+            ${{ needs.prepare.outputs.auth_service_image }}:${{ github.sha }}
+            ${{ needs.prepare.outputs.auth_service_image }}:latest
+
+      - name: Build and push user-profile-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/user-profile-service
+          push: true
+          tags: |
+            ${{ needs.prepare.outputs.user_profile_service_image }}:${{ github.sha }}
+            ${{ needs.prepare.outputs.user_profile_service_image }}:latest
 
   deploy:
     name: Deploy

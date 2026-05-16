@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const services = ["chunk-catalog", "chunk-location", "replication-planner", "storage-gateway"];
+const services = ["chunk-catalog", "chunk-location", "replication-planner", "storage-gateway", "auth-service", "user-profile-service"];
 const outputRoot = path.join(process.cwd(), "tests", "coverage");
 
 if (!fs.existsSync(outputRoot)) {
