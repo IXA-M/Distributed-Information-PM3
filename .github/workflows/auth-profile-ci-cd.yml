@@ -15,6 +15,7 @@ on:
       - 'services/auth-service/**'
       - 'services/user-profile-service/**'
       - '.github/workflows/auth-profile-ci-cd.yml'
+  workflow_dispatch:
 
 env:
   GHCR_REGISTRY: ghcr.io
@@ -55,11 +56,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Static code analysis (Auth Service)
-        run: npm run lint --workspace=services/auth-service
-
-      - name: Static code analysis (User Profile Service)
-        run: npm run lint --workspace=services/user-profile-service
+      - name: Static code analysis
+        run: npm run lint
 
   build:
     name: Build
@@ -78,11 +76,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify build stage (Auth Service)
-        run: npm run build --workspace=services/auth-service
-
-      - name: Verify build stage (User Profile Service)
-        run: npm run build --workspace=services/user-profile-service
+      - name: Verify build stage
+        run: npm run build
 
   test:
     name: Test
