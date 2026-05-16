@@ -1,4 +1,7 @@
 require('dotenv').config();
+const { startTracing } = require('../../shared/tracing');
+const tracing = startTracing('auth-service');
+
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('./config/logger');
@@ -57,6 +60,7 @@ async function start() {
       server.close();
       await disconnectKafka();
       await db.end();
+      await tracing.shutdown();
       process.exit(0);
     });
   } catch (err) {
