@@ -1,0 +1,267 @@
+name: Auth and Profile Services CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/auth-service/**'
+      - 'services/user-profile-service/**'
+      - '.github/workflows/auth-profile-ci-cd.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'services/auth-service/**'
+      - 'services/user-profile-service/**'
+      - '.github/workflows/auth-profile-ci-cd.yml'
+  workflow_dispatch:
+
+env:
+  GHCR_REGISTRY: ghcr.io
+  DOCKERHUB_REGISTRY: docker.io
+  DOCKERHUB_NAMESPACE: ahmedxdarwish
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      ghcr_namespace: ${{ steps.vars.outputs.ghcr_namespace }}
+      auth_service_image: ${{ steps.vars.outputs.auth_service_image }}
+      user_profile_service_image: ${{ steps.vars.outputs.user_profile_service_image }}
+    steps:
+      - name: Compute image names
+        id: vars
+        shell: bash
+        run: |
+          ghcr_namespace="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "ghcr_namespace=${ghcr_namespace}" >> "$GITHUB_OUTPUT"
+          echo "auth_service_image=${GHCR_REGISTRY}/${ghcr_namespace}/auth-service" >> "$GITHUB_OUTPUT"
+          echo "user_profile_service_image=${GHCR_REGISTRY}/${ghcr_namespace}/user-profile-service" >> "$GITHUB_OUTPUT"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Static code analysis
+        run: npm run lint
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify build stage
+        run: npm run build
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit and integration tests with coverage (Auth Service)
+        run: npm run test --workspace=services/auth-service
+
+      - name: Run unit and integration tests with coverage (User Profile Service)
+        run: npm run test --workspace=services/user-profile-service
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports-auth-profile
+          path: |
+            services/auth-service/tests/coverage
+            services/user-profile-service/tests/coverage
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build auth-service image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/auth-service
+          push: false
+          tags: ${{ needs.prepare.outputs.auth_service_image }}:${{ github.sha }}
+
+      - name: Build user-profile-service image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/user-profile-service
+          push: false
+          tags: ${{ needs.prepare.outputs.user_profile_service_image }}:${{ github.sha }}
+
+  push:
+    name: Push
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - docker-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push auth-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/auth-service
+          push: true
+          tags: |
+            ${{ needs.prepare.outputs.auth_service_image }}:${{ github.sha }}
+            ${{ needs.prepare.outputs.auth_service_image }}:latest
+
+      - name: Build and push user-profile-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/user-profile-service
+          push: true
+          tags: |
+            ${{ needs.prepare.outputs.user_profile_service_image }}:${{ github.sha }}
+            ${{ needs.prepare.outputs.user_profile_service_image }}:latest
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.1
+
+      - name: Configure kubeconfig
+        id: kubeconfig
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          mkdir -p ~/.kube
+          normalized_config="$(printf '%s' "$KUBE_CONFIG" | tr -d '\r\n ')"
+
+          if printf '%s' "$normalized_config" | base64 -d > ~/.kube/config 2>/dev/null && grep -q '^apiVersion:' ~/.kube/config; then
+            echo "Loaded base64-encoded kubeconfig"
+          else
+            printf '%s' "$KUBE_CONFIG" > ~/.kube/config
+          fi
+
+          if ! grep -q '^apiVersion:' ~/.kube/config; then
+            echo "::error::KUBE_CONFIG must be either raw kubeconfig YAML or a base64-encoded kubeconfig."
+            exit 1
+          fi
+
+          chmod 600 ~/.kube/config
+
+          if grep -Eq '127\.0\.0\.1|localhost|kubernetes\.docker\.internal|minikube|docker-desktop|C:\\Users\\' ~/.kube/config; then
+            echo "::warning::KUBE_CONFIG points to a local Kubernetes cluster. GitHub Actions cannot reach it, so this run will validate Helm manifests without deploying."
+            echo "deploy_mode=mock" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_mode=real" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy with Helm
+        if: steps.kubeconfig.outputs.deploy_mode == 'real'
+        run: |
+          helm upgrade --install cse474 ./chart \
+            --namespace cse474-prod \
+            --create-namespace \
+            --set services.authService.image.repository=${{ needs.prepare.outputs.auth_service_image }} \
+            --set services.authService.image.tag=${{ github.sha }} \
+            --set services.userProfileService.image.repository=${{ needs.prepare.outputs.user_profile_service_image }} \
+            --set services.userProfileService.image.tag=${{ github.sha }} \
+            --set services.authService.database.password=${{ secrets.AUTH_DB_PASSWORD }} \
+            --set services.userProfileService.database.password=${{ secrets.PROFILE_DB_PASSWORD }} \
+            --set imageRegistry=${{ env.GHCR_REGISTRY }}/${{ needs.prepare.outputs.ghcr_namespace }} \
+            --set services.chunkCatalog.image.repository=${{ env.GHCR_REGISTRY }}/${{ needs.prepare.outputs.ghcr_namespace }}/chunk-catalog \
+            --set services.chunkCatalog.image.tag=${{ github.sha }} \
+            --set services.chunkLocation.image.repository=${{ env.GHCR_REGISTRY }}/${{ needs.prepare.outputs.ghcr_namespace }}/chunk-location \
+            --set services.chunkLocation.image.tag=${{ github.sha }} \
+            --set services.storageGateway.tag=${{ github.sha }} \
+            --set services.replicationPlanner.tag=${{ github.sha }}
+
+      - name: Validate Helm manifests
+        if: steps.kubeconfig.outputs.deploy_mode == 'mock'
+        run: |
+          helm template cse474 ./chart \
+            --namespace cse474-prod \
+            --set services.authService.image.repository=${{ needs.prepare.outputs.auth_service_image }} \
+            --set services.authService.image.tag=${{ github.sha }} \
+            --set services.userProfileService.image.repository=${{ needs.prepare.outputs.user_profile_service_image }} \
+            --set services.userProfileService.image.tag=${{ github.sha }} \
+            --set services.authService.database.password=mock_password \
+            --set services.userProfileService.database.password=mock_password \
+            --set imageRegistry=${{ env.GHCR_REGISTRY }}/${{ needs.prepare.outputs.ghcr_namespace }} \
+            --set services.chunkCatalog.image.repository=${{ env.GHCR_REGISTRY }}/${{ needs.prepare.outputs.ghcr_namespace }}/chunk-catalog \
+            --set services.chunkCatalog.image.tag=${{ github.sha }} \
+            --set services.chunkLocation.image.repository=${{ env.GHCR_REGISTRY }}/${{ needs.prepare.outputs.ghcr_namespace }}/chunk-location \
+            --set services.chunkLocation.image.tag=${{ github.sha }} \
+            --set services.storageGateway.tag=${{ github.sha }} \
+            --set services.replicationPlanner.tag=${{ github.sha }} \
+            > rendered-manifests-auth-profile.yaml
+
+          test -s rendered-manifests-auth-profile.yaml
+          echo "Validated Helm chart rendering for local-only kubeconfig."

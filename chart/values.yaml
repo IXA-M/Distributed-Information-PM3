@@ -234,3 +234,137 @@ monitoring:
     image: jaegertracing/all-in-one:1.60
   loki:
     image: grafana/loki:3.1.1
+
+  authService:
+    name: auth-service
+    image:
+      repository: auth-service
+      tag: latest
+      pullPolicy: IfNotPresent
+    command:
+      - node
+      - src/index.js
+    replicaCount: 2
+    containerPort: 3001
+    service:
+      type: ClusterIP
+      port: 3001
+    config:
+      PORT: "3001"
+      KAFKA_BROKERS: kafka:9092
+    secret:
+      DB_HOST: postgres-auth
+      DB_PORT: "5432"
+      DB_NAME: auth_db
+      DB_USER: postgres
+      DB_PASSWORD: ""
+      JWT_SECRET: ""
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      startup:
+        path: /health
+        periodSeconds: 5
+        failureThreshold: 24
+      readiness:
+        path: /ready
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+    ingress:
+      host: auth-service.local
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+    database:
+      enabled: true
+      name: postgres-auth
+      image: postgres:16
+      port: 5432
+      initDatabase: auth_db
+      initSQL: "/app/src/config/init.sql"
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
+
+  userProfileService:
+    name: user-profile-service
+    image:
+      repository: user-profile-service
+      tag: latest
+      pullPolicy: IfNotPresent
+    command:
+      - node
+      - src/index.js
+    replicaCount: 2
+    containerPort: 3002
+    service:
+      type: ClusterIP
+      port: 3002
+    config:
+      PORT: "3002"
+      KAFKA_BROKERS: kafka:9092
+    secret:
+      DB_HOST: postgres-profile
+      DB_PORT: "5432"
+      DB_NAME: profile_db
+      DB_USER: postgres
+      DB_PASSWORD: ""
+      JWT_SECRET: ""
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      startup:
+        path: /health
+        periodSeconds: 5
+        failureThreshold: 24
+      readiness:
+        path: /ready
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+    ingress:
+      host: user-profile-service.local
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+    database:
+      enabled: true
+      name: postgres-profile
+      image: postgres:16
+      port: 5432
+      initDatabase: profile_db
+      initSQL: "/app/src/config/init.sql"
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
