@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info:
+  title: User Profile Service API
+  version: 1.0.0
+  description: User Profile microservice – read and update user profiles
+servers:
+  - url: http://localhost:3002
+paths:
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200":
+          description: Service is alive
+  /ready:
+    get:
+      summary: Readiness probe
+      responses:
+        "200":
+          description: Database and Kafka producer are ready
+  /metrics:
+    get:
+      summary: Prometheus metrics endpoint
+      responses:
+        "200":
+          description: Prometheus text metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+  /docs:
+    get:
+      summary: Swagger/OpenAPI documentation page
+      responses:
+        "200":
+          description: HTML documentation page
+  /api-docs:
+    get:
+      summary: Alias for Swagger/OpenAPI documentation page
+      responses:
+        "200":
+          description: HTML documentation page
+  /openapi.yaml:
+    get:
+      summary: Raw OpenAPI YAML document
+      responses:
+        "200":
+          description: OpenAPI YAML
+  /profiles/{id}:
+    get:
+      summary: Get user profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Profile found
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+    put:
+      summary: Update user profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone: { type: string }
+                city: { type: string }
+                bio: { type: string }
+      responses:
+        "200":
+          description: Profile updated
+        "403":
+          description: Forbidden

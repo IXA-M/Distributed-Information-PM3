@@ -8,7 +8,8 @@ const logger = require('./config/logger');
 const db = require('./config/database');
 const { connectKafka, disconnectKafka } = require('./kafka/index');
 const profileRoutes = require('./routes/profiles');
-const { createMetrics } = require('../../shared/observability');
+const { createMetrics, createDocsHandler, createOpenApiHandler } = require('../../shared/observability');
+const path = require('path');
 
 const app = express();
 const metrics = createMetrics('user-profile-service');
@@ -18,6 +19,12 @@ const META = { service: 'user-profile-service' };
 app.use(express.json());
 app.use(metrics.middleware);
 app.use((req, _res, next) => { req.requestId = uuidv4(); next(); });
+
+// ── Documentation ───────────────────────────────────────────────────────────
+const openApiPath = path.join(__dirname, '../openapi.yaml');
+app.get('/docs', createDocsHandler({ openApiPath, title: 'User Profile Service API' }));
+app.get('/api-docs', (req, res) => res.redirect('/docs'));
+app.get('/openapi.yaml', createOpenApiHandler(openApiPath));
 
 // ── Health probes ──────────────────────────────────────────────────────────────
 app.get('/metrics', metrics.handler);
