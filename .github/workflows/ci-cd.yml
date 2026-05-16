@@ -22,6 +22,8 @@ jobs:
       ghcr_namespace: ${{ steps.vars.outputs.ghcr_namespace }}
       chunk_catalog_image: ${{ steps.vars.outputs.chunk_catalog_image }}
       chunk_location_image: ${{ steps.vars.outputs.chunk_location_image }}
+      secrets_broker_image: ${{ steps.vars.outputs.secrets_broker_image }}
+      chaos_simulator_image: ${{ steps.vars.outputs.chaos_simulator_image }}
       storage_gateway_image: ${{ steps.vars.outputs.storage_gateway_image }}
       replication_planner_image: ${{ steps.vars.outputs.replication_planner_image }}
       auth_service_image: ${{ steps.vars.outputs.auth_service_image }}
@@ -35,6 +37,8 @@ jobs:
           echo "ghcr_namespace=${ghcr_namespace}" >> "$GITHUB_OUTPUT"
           echo "chunk_catalog_image=${GHCR_REGISTRY}/${ghcr_namespace}/chunk-catalog" >> "$GITHUB_OUTPUT"
           echo "chunk_location_image=${GHCR_REGISTRY}/${ghcr_namespace}/chunk-location" >> "$GITHUB_OUTPUT"
+          echo "secrets_broker_image=${GHCR_REGISTRY}/${ghcr_namespace}/secrets-broker" >> "$GITHUB_OUTPUT"
+          echo "chaos_simulator_image=${GHCR_REGISTRY}/${ghcr_namespace}/chaos-simulator" >> "$GITHUB_OUTPUT"
           echo "storage_gateway_image=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/storage-gateway" >> "$GITHUB_OUTPUT"
           echo "replication_planner_image=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/replication-planner" >> "$GITHUB_OUTPUT"
           echo "auth_service_image=${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/auth-service" >> "$GITHUB_OUTPUT"
@@ -151,6 +155,20 @@ jobs:
           push: false
           tags: ${{ needs.prepare.outputs.storage_gateway_image }}:${{ github.sha }}
 
+      - name: Build secrets-broker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/secrets-broker
+          push: false
+          tags: ${{ needs.prepare.outputs.secrets_broker_image }}:${{ github.sha }}
+
+      - name: Build chaos-simulator image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/chaos-simulator
+          push: false
+          tags: ${{ needs.prepare.outputs.chaos_simulator_image }}:${{ github.sha }}
+
       - name: Build replication-planner image
         uses: docker/build-push-action@v6
         with:
@@ -231,6 +249,24 @@ jobs:
           tags: |
             ${{ needs.prepare.outputs.storage_gateway_image }}:${{ github.sha }}
             ${{ needs.prepare.outputs.storage_gateway_image }}:latest
+
+      - name: Build and push secrets-broker
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/secrets-broker
+          push: true
+          tags: |
+            ${{ needs.prepare.outputs.secrets_broker_image }}:${{ github.sha }}
+            ${{ needs.prepare.outputs.secrets_broker_image }}:latest
+
+      - name: Build and push chaos-simulator
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/chaos-simulator
+          push: true
+          tags: |
+            ${{ needs.prepare.outputs.chaos_simulator_image }}:${{ github.sha }}
+            ${{ needs.prepare.outputs.chaos_simulator_image }}:latest
 
       - name: Build and push replication-planner
         uses: docker/build-push-action@v6
@@ -327,7 +363,11 @@ jobs:
             --set services.authService.image.repository=${{ needs.prepare.outputs.auth_service_image }} \
             --set services.authService.image.tag=${{ github.sha }} \
             --set services.userProfileService.image.repository=${{ needs.prepare.outputs.user_profile_service_image }} \
-            --set services.userProfileService.image.tag=${{ github.sha }}
+            --set services.userProfileService.image.tag=${{ github.sha }} \
+            --set services.secretsBroker.image.repository=${{ needs.prepare.outputs.secrets_broker_image }} \
+            --set services.secretsBroker.image.tag=${{ github.sha }} \
+            --set services.chaosSimulator.image.repository=${{ needs.prepare.outputs.chaos_simulator_image }} \
+            --set services.chaosSimulator.image.tag=${{ github.sha }}
 
       - name: Validate Helm manifests
         if: steps.kubeconfig.outputs.deploy_mode == 'mock'
@@ -346,6 +386,10 @@ jobs:
             --set services.authService.image.tag=${{ github.sha }} \
             --set services.userProfileService.image.repository=${{ needs.prepare.outputs.user_profile_service_image }} \
             --set services.userProfileService.image.tag=${{ github.sha }} \
+            --set services.secretsBroker.image.repository=${{ needs.prepare.outputs.secrets_broker_image }} \
+            --set services.secretsBroker.image.tag=${{ github.sha }} \
+            --set services.chaosSimulator.image.repository=${{ needs.prepare.outputs.chaos_simulator_image }} \
+            --set services.chaosSimulator.image.tag=${{ github.sha }} \
             > rendered-manifests.yaml
 
           test -s rendered-manifests.yaml

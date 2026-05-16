@@ -247,7 +247,7 @@ services:
       image: postgres:16
       port: 5432
       initDatabase: auth_db
-      initSQL: "services/auth-service/src/config/init.sql"
+      initSQL: files/auth-init.sql
       resources:
         requests:
           cpu: 100m
@@ -316,7 +316,121 @@ services:
       image: postgres:16
       port: 5432
       initDatabase: profile_db
-      initSQL: "services/user-profile-service/src/config/init.sql"
+      initSQL: files/user-profile-init.sql
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
+
+  secretsBroker:
+    name: secrets-broker
+    image:
+      repository: ghcr.io/ixa-m/distributed-information-pm3/secrets-broker
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 3001
+    service:
+      type: ClusterIP
+      port: 3001
+    config:
+      NODE_ENV: production
+      PORT: "3001"
+      SERVICE_NAME: secrets-broker
+      MONGO_URI: mongodb://secrets-broker-db:27017
+      DB_NAME: secrets_broker_db
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_TRACES_EXPORTER: otlp
+    secret:
+      RESERVED_SECRET: replace-in-real-cluster
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      readiness:
+        path: /ready
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+    database:
+      enabled: true
+      name: secrets-broker-db
+      image: mongo:7
+      port: 27017
+      initDatabase: secrets_broker_db
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
+
+  chaosSimulator:
+    name: chaos-simulator
+    image:
+      repository: ghcr.io/ixa-m/distributed-information-pm3/chaos-simulator
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 3002
+    service:
+      type: ClusterIP
+      port: 3002
+    config:
+      NODE_ENV: production
+      PORT: "3002"
+      SERVICE_NAME: chaos-simulator
+      MONGO_URI: mongodb://chaos-simulator-db:27017
+      DB_NAME: chaos_simulator_db
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: chaos-simulator-client
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_TRACES_EXPORTER: otlp
+    secret:
+      RESERVED_SECRET: replace-in-real-cluster
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    probes:
+      readiness:
+        path: /ready
+        initialDelaySeconds: 10
+        periodSeconds: 10
+      liveness:
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+    database:
+      enabled: true
+      name: chaos-simulator-db
+      image: mongo:7
+      port: 27017
+      initDatabase: chaos_simulator_db
       resources:
         requests:
           cpu: 100m

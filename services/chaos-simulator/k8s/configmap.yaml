@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chaos-simulator-config
+data:
+  PORT: "3002"
+  SERVICE_NAME: "chaos-simulator"
+  DB_NAME: "chaos_simulator_db"
+  KAFKA_BROKERS: "kafka:9092"
+  KAFKA_CLIENT_ID: "chaos-simulator-client"

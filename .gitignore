@@ -1,5 +1,6 @@
 node_modules/
 /coverage/
+services/*/tests/coverage/
 dist/
 .env
 .env.*

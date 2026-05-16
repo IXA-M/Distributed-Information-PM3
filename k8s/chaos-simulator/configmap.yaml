@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chaos-simulator-config
+  namespace: cse474-prod
+data:
+  NODE_ENV: production
+  PORT: "3002"
+  SERVICE_NAME: chaos-simulator
+  MONGO_URI: mongodb://chaos-simulator-db:27017
+  DB_NAME: chaos_simulator_db
+  KAFKA_BROKERS: kafka:9092
+  KAFKA_CLIENT_ID: chaos-simulator-client
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+  OTEL_TRACES_EXPORTER: otlp

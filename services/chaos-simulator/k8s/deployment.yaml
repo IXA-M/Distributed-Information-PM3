@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaos-simulator
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chaos-simulator
+  template:
+    metadata:
+      labels:
+        app: chaos-simulator
+    spec:
+      containers:
+        - name: chaos-simulator
+          image: chaos-simulator:latest
+          ports:
+            - containerPort: 3002
+          envFrom:
+            - configMapRef:
+                name: chaos-simulator-config
+            - secretRef:
+                name: chaos-simulator-secret
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 10
+            periodSeconds: 15

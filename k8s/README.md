@@ -22,6 +22,8 @@ k8s/
   monitoring.yaml
   chunk-catalog/
   chunk-location/
+  secrets-broker/
+  chaos-simulator/
   storage-gateway.yaml
   replication-planner.yaml
   observability/
@@ -48,6 +50,8 @@ kubectl apply -f k8s/mongodb.yaml
 kubectl apply -f k8s/kafka.yaml
 kubectl apply -f k8s/chunk-catalog/
 kubectl apply -f k8s/chunk-location/
+kubectl apply -f k8s/secrets-broker/
+kubectl apply -f k8s/chaos-simulator/
 kubectl apply -f k8s/storage-gateway.yaml
 kubectl apply -f k8s/replication-planner.yaml
 kubectl apply -f k8s/monitoring.yaml
